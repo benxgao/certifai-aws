@@ -1,0 +1,108 @@
+name: Manual Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to deploy to"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+      action:
+        description: "Action to perform"
+        required: true
+        default: "deploy"
+        type: choice
+        options:
+          - deploy
+          - rollback
+
+env:
+  NODE_VERSION: "22"
+  AWS_REGION: "us-east-1"
+
+jobs:
+  manual-deployment:
+    name: Manual ${{ github.event.inputs.action }} to ${{ github.event.inputs.environment }}
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment == 'dev' && 'development' || github.event.inputs.environment }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        if: github.event.inputs.action == 'deploy'
+        run: npm run build
+
+      - name: Setup AWS CLI
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup SAM CLI
+        uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: Build SAM application
+        if: github.event.inputs.action == 'deploy'
+        run: sam build
+
+      - name: Deploy Application
+        if: github.event.inputs.action == 'deploy'
+        run: |
+          MAILERLITE_SECRET_NAME="MAILERLITE_API_KEY_$(echo ${{ github.event.inputs.environment }} | tr '[:lower:]' '[:upper:]')"
+          MAILERLITE_API_KEY="${{ secrets[env.MAILERLITE_SECRET_NAME] || secrets.MAILERLITE_API_KEY_DEV }}"
+
+          sam deploy \
+            --stack-name certifai-aws-lambda-${{ github.event.inputs.environment }} \
+            --parameter-overrides \
+              Environment=${{ github.event.inputs.environment }} \
+              MailerLiteApiKey="${MAILERLITE_API_KEY}" \
+            --capabilities CAPABILITY_IAM \
+            --region ${{ env.AWS_REGION }} \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset
+
+      - name: Rollback Application
+        if: github.event.inputs.action == 'rollback'
+        run: |
+          echo "🔄 Rolling back ${{ github.event.inputs.environment }} environment..."
+
+          # Get the previous successful deployment
+          STACK_NAME="certifai-aws-lambda-${{ github.event.inputs.environment }}"
+
+          # List stack events to find the last successful deployment
+          aws cloudformation describe-stack-events \
+            --stack-name $STACK_NAME \
+            --query 'StackEvents[?ResourceStatusReason==`UPDATE_COMPLETE`][0].{Timestamp:Timestamp,Status:ResourceStatus}' \
+            --output table
+            
+          echo "⚠️  Manual rollback requires selecting a specific version."
+          echo "Please use AWS Console or specify a template version for rollback."
+          echo "Stack name: $STACK_NAME"
+
+      - name: Deployment Summary
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Action**: ${{ github.event.inputs.action }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Stack Name**: certifai-aws-lambda-${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Region**: ${{ env.AWS_REGION }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Timestamp**: $(date)" >> $GITHUB_STEP_SUMMARY

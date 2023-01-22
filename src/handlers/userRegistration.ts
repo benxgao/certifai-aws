@@ -1,0 +1,105 @@
+import {
+  APIGatewayProxyEvent,
+  APIGatewayProxyResult,
+  Context,
+} from "aws-lambda";
+import { UserRegistrationRequest, UserRegistrationResponse } from "../types";
+import {
+  createSuccessResponse,
+  createBadRequestResponse,
+  createInternalServerErrorResponse,
+} from "../utils/response";
+import { validateUserRegistration } from "../utils/validation";
+import { MailerLiteService } from "../services/mailerLiteService";
+import { logger } from "../utils/logger";
+
+export const handler = async (
+  event: APIGatewayProxyEvent,
+  context: Context
+): Promise<APIGatewayProxyResult> => {
+  try {
+    logger.info("User registration endpoint called", {
+      requestId: context.awsRequestId,
+      sourceIp: event.requestContext.identity.sourceIp,
+    });
+
+    // Parse request body
+    if (!event.body) {
+      logger.warn("Empty request body received");
+      return createBadRequestResponse("Request body is required");
+    }
+
+    let userData: unknown;
+    try {
+      userData = JSON.parse(event.body);
+    } catch (parseError) {
+      logger.error("Invalid JSON in request body", parseError);
+      return createBadRequestResponse("Invalid JSON format");
+    }
+
+    // Validate request data
+    const validation = validateUserRegistration(userData);
+    if (!validation.isValid) {
+      logger.warn("Validation failed", { error: validation.error, userData });
+      return createBadRequestResponse(
+        validation.error || "Invalid request data"
+      );
+    }
+
+    const validatedData = validation.value as UserRegistrationRequest;
+
+    // Check for MailerLite API key
+    const mailerLiteApiKey = process.env.MAILERLITE_API_KEY;
+    if (!mailerLiteApiKey) {
+      logger.error("MailerLite API key not configured");
+      return createInternalServerErrorResponse("Service configuration error");
+    }
+
+    // Create MailerLite subscriber
+    const mailerLiteService = new MailerLiteService(mailerLiteApiKey);
+
+    try {
+      const subscriberId = await mailerLiteService.createSubscriber(
+        validatedData
+      );
+
+      const response: UserRegistrationResponse = {
+        success: true,
+        message: "User registered successfully",
+        subscriberId,
+      };
+
+      logger.info("User registration completed successfully", {
+        email: validatedData.email,
+        subscriberId,
+        requestId: context.awsRequestId,
+      });
+
+      return createSuccessResponse(response);
+    } catch (mailerLiteError) {
+      const errorMessage =
+        mailerLiteError instanceof Error
+          ? mailerLiteError.message
+          : "Failed to register user with MailerLite";
+
+      logger.error("MailerLite registration failed", mailerLiteError, {
+        email: validatedData.email,
+        requestId: context.awsRequestId,
+      });
+
+      // Return a user-friendly error response
+      const response: UserRegistrationResponse = {
+        success: false,
+        message: errorMessage,
+      };
+
+      return createBadRequestResponse(response.message);
+    }
+  } catch (error) {
+    logger.error("Unexpected error in user registration", error, {
+      requestId: context.awsRequestId,
+    });
+
+    return createInternalServerErrorResponse("An unexpected error occurred");
+  }
+};

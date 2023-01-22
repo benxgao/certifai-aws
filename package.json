@@ -1,0 +1,45 @@
+{
+  "name": "certifai-aws-lambda",
+  "version": "1.0.0",
+  "description": "AWS Lambda functions for health check and MailerLite user registration",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "clean": "rm -rf dist",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "deploy:local": "sam build && sam deploy --guided",
+    "dev": "sam build && sam local start-api --docker-network host"
+  },
+  "keywords": [
+    "aws",
+    "lambda",
+    "mailerlite",
+    "serverless"
+  ],
+  "author": "",
+  "private": true,
+  "license": "UNLICENSED",
+  "engines": {
+    "node": "22"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.119",
+    "@types/jest": "^29.5.5",
+    "@types/node": "^22.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.4.1",
+    "@typescript-eslint/parser": "^6.4.1",
+    "eslint": "^8.47.0",
+    "eslint-config-typescript": "^3.0.0",
+    "jest": "^29.6.2",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.1.6"
+  },
+  "dependencies": {
+    "axios": "^1.5.0",
+    "joi": "^17.9.2"
+  }
+}

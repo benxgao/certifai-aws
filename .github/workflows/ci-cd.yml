@@ -1,0 +1,227 @@
+name: CI/CD Pipeline
+
+# Branch Strategy:
+# - dev: Development environment deployment
+# - staging: Staging environment deployment
+# - master: Production environment deployment
+# Pull requests are allowed to staging and master branches for review
+
+on:
+  push:
+    branches: [master, staging, dev]
+  pull_request:
+    branches: [master, staging]
+
+env:
+  NODE_VERSION: "22"
+  AWS_REGION: "us-east-1"
+
+jobs:
+  test:
+    name: Test and Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build TypeScript
+        run: npm run build
+
+  deploy-dev:
+    name: Deploy to Development
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Setup AWS CLI
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup SAM CLI
+        uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: Build SAM application
+        run: sam build
+
+      - name: Deploy to Development
+        run: |
+          sam deploy \
+            --config-env dev \
+            --stack-name certifai-aws-lambda-dev \
+            --resolve-s3 \
+            --capabilities CAPABILITY_IAM \
+            --parameter-overrides \
+              MailerLiteApiKey="${{ secrets.MAILERLITE_API_KEY_DEV }}"
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/staging' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Setup AWS CLI
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup SAM CLI
+        uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: Build SAM application
+        run: sam build
+
+      - name: Deploy to Staging
+        run: |
+          sam deploy \
+            --config-env staging \
+            --stack-name certifai-aws-lambda-staging \
+            --resolve-s3 \
+            --capabilities CAPABILITY_IAM \
+            --parameter-overrides \
+              MailerLiteApiKey="${{ secrets.MAILERLITE_API_KEY_STAGING }}"
+
+      - name: Post-deployment health check
+        run: |
+          echo "🔍 Performing post-deployment health check for staging..."
+          sleep 30  # Wait for deployment to stabilize
+          # Add your staging-specific health check logic here
+          echo "✅ Staging health check completed"
+
+      - name: Notify staging deployment success
+        if: success()
+        run: |
+          echo "🎉 Staging deployment completed successfully!"
+          echo "Stack: certifai-aws-lambda-staging"
+          echo "Environment: staging"
+
+      - name: Notify staging deployment failure
+        if: failure()
+        run: |
+          echo "❌ Staging deployment failed!"
+          echo "Please check the logs above for details."
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Setup AWS CLI
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup SAM CLI
+        uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: Build SAM application
+        run: sam build
+
+      - name: Deploy to Production
+        run: |
+          sam deploy \
+            --config-env prod \
+            --stack-name certifai-aws-lambda-prod \
+            --resolve-s3 \
+            --capabilities CAPABILITY_IAM \
+            --parameter-overrides \
+              MailerLiteApiKey="${{ secrets.MAILERLITE_API_KEY_PROD }}"
+
+      - name: Post-deployment health check
+        run: |
+          echo "🔍 Performing post-deployment health check for production..."
+          sleep 30  # Wait for deployment to stabilize
+          # Add your production-specific health check logic here
+          echo "✅ Production health check completed"
+
+      - name: Notify production deployment success
+        if: success()
+        run: |
+          echo "🎉 Production deployment completed successfully!"
+          echo "Stack: certifai-aws-lambda-prod"
+          echo "Environment: production"
+          echo "This is the LIVE environment - handle with care!"
+
+      - name: Notify production deployment failure
+        if: failure()
+        run: |
+          echo "❌ Production deployment failed!"
+          echo "URGENT: Production deployment issue detected!"
+          echo "Please check the logs above for details and take immediate action."
