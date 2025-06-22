@@ -65,6 +65,9 @@ jobs:
       - name: Build application
         run: npm run build
 
+      - name: Copy package.json to dist for SAM
+        run: cp package.json dist/
+
       - name: Setup AWS CLI
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -78,7 +81,7 @@ jobs:
           use-installer: true
 
       - name: Build SAM application
-        run: sam build
+        run: sam build --use-container
 
       - name: Deploy to Development
         run: |
@@ -112,6 +115,9 @@ jobs:
       - name: Build application
         run: npm run build
 
+      - name: Copy package.json to dist for SAM
+        run: cp package.json dist/
+
       - name: Setup AWS CLI
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -125,7 +131,7 @@ jobs:
           use-installer: true
 
       - name: Build SAM application
-        run: sam build
+        run: sam build --use-container
 
       - name: Deploy to Staging
         run: |
@@ -179,6 +185,9 @@ jobs:
       - name: Build application
         run: npm run build
 
+      - name: Copy package.json to dist for SAM
+        run: cp package.json dist/
+
       - name: Setup AWS CLI
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -192,7 +201,7 @@ jobs:
           use-installer: true
 
       - name: Build SAM application
-        run: sam build
+        run: sam build --use-container
 
       - name: Deploy to Production
         run: |
