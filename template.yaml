@@ -15,6 +15,7 @@ Globals:
       Variables:
         NODE_ENV: !Ref Environment
         MAILERLITE_API_KEY: !Ref MailerLiteApiKey
+        PUBLIC_JWT_SECRET: !Ref PublicJwtSecret
 
 Parameters:
   Environment:
@@ -30,6 +31,11 @@ Parameters:
     Type: String
     NoEcho: true
     Description: MailerLite API Key
+
+  PublicJwtSecret:
+    Type: String
+    NoEcho: true
+    Description: JWT Secret for public token authentication
 
 Resources:
   # API Gateway (defined first to avoid circular dependencies)

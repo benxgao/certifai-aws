@@ -45,6 +45,12 @@ export const createBadRequestResponse = (message: string): ApiResponse => {
   return createErrorResponse(400, "Bad Request", message);
 };
 
+export const createUnauthorizedResponse = (
+  message: string = "Unauthorized"
+): ApiResponse => {
+  return createErrorResponse(401, "Unauthorized", message);
+};
+
 export const createInternalServerErrorResponse = (
   message: string = "Internal Server Error"
 ): ApiResponse => {

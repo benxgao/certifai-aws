@@ -9,4 +9,8 @@ module.exports = {
   collectCoverageFrom: ["src/**/*.ts", "!src/**/*.d.ts", "!src/**/*.test.ts"],
   coverageDirectory: "coverage",
   coverageReporters: ["text", "lcov", "html"],
+  // Mock jose module completely to avoid ES module issues
+  moduleNameMapper: {
+    "^jose$": "<rootDir>/src/__mocks__/jose.ts",
+  },
 };
