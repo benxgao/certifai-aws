@@ -2,21 +2,21 @@ import { jwtVerify } from "jose";
 import { logger } from "./logger";
 
 /**
- * Verifies a JWT token using the PUBLIC_JWT_SECRET environment variable
+ * Verifies a JWT token using the MARKETING_API_JWT_SECRET environment variable
  * @param token - The JWT token to verify
  * @returns Promise<boolean> - True if token is valid, false otherwise
  */
 export async function verifyJwtToken(token: string): Promise<boolean> {
   try {
-    const publicJwtSecret = process.env.PUBLIC_JWT_SECRET;
+    const marketingApiJwtSecret = process.env.MARKETING_API_JWT_SECRET;
 
-    if (!publicJwtSecret) {
-      logger.error("PUBLIC_JWT_SECRET environment variable is not set");
+    if (!marketingApiJwtSecret) {
+      logger.error("MARKETING_API_JWT_SECRET environment variable is not set");
       return false;
     }
 
     // Convert the secret to Uint8Array for jose
-    const secret = new TextEncoder().encode(publicJwtSecret);
+    const secret = new TextEncoder().encode(marketingApiJwtSecret);
 
     // Verify the JWT token
     await jwtVerify(token, secret);

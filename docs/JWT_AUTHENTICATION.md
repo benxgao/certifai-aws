@@ -1,6 +1,6 @@
 # JWT Authentication for /register Endpoint
 
-This document explains the JWT authentication implementation for the `/register` endpoint using the `jose` library and `PUBLIC_JWT_SECRET` environment variable.
+This document explains the JWT authentication implementation for the `/register` endpoint using the `jose` library and `MARKETING_API_JWT_SECRET` environment variable.
 
 ## Overview
 
@@ -10,7 +10,7 @@ The `/register` endpoint is now protected with JWT (JSON Web Token) authenticati
 
 1. **Token Required**: Every request to `/register` must include a JWT token
 2. **Token Extraction**: Token is extracted from the `Authorization` header
-3. **Token Verification**: Token is verified using the `PUBLIC_JWT_SECRET` environment variable
+3. **Token Verification**: Token is verified using the `MARKETING_API_JWT_SECRET` environment variable
 4. **Access Control**: Only requests with valid tokens can proceed to user registration
 
 ## Implementation Details
@@ -19,12 +19,12 @@ The `/register` endpoint is now protected with JWT (JSON Web Token) authenticati
 
 Located in `src/utils/jwtAuth.ts`:
 
-- `verifyJwtToken(token: string)`: Verifies JWT token using PUBLIC_JWT_SECRET
+- `verifyJwtToken(token: string)`: Verifies JWT token using MARKETING_API_JWT_SECRET
 - `extractTokenFromHeader(authHeader: string)`: Extracts token from Authorization header
 
 ### Environment Variable
 
-- `PUBLIC_JWT_SECRET`: The secret key used to sign and verify JWT tokens
+- `MARKETING_API_JWT_SECRET`: The secret key used to sign and verify JWT tokens
 - Must be set in your CloudFormation parameters or environment
 
 ### Token Formats Supported
@@ -50,14 +50,14 @@ Use the provided script to generate test tokens:
 
 ```bash
 # Using default payload and 1 hour expiration
-PUBLIC_JWT_SECRET=your-secret-key node scripts/generate-jwt.js
+MARKETING_API_JWT_SECRET=your-secret-key node scripts/generate-jwt.js
 
 # Custom payload
-PUBLIC_JWT_SECRET=your-secret-key node scripts/generate-jwt.js '{"userId":"123","role":"admin"}' '24h'
+MARKETING_API_JWT_SECRET=your-secret-key node scripts/generate-jwt.js '{"userId":"123","role":"admin"}' '24h'
 
 # Different expiration times
-PUBLIC_JWT_SECRET=your-secret-key node scripts/generate-jwt.js '{}' '30m'
-PUBLIC_JWT_SECRET=your-secret-key node scripts/generate-jwt.js '{}' '7d'
+MARKETING_API_JWT_SECRET=your-secret-key node scripts/generate-jwt.js '{}' '30m'
+MARKETING_API_JWT_SECRET=your-secret-key node scripts/generate-jwt.js '{}' '7d'
 ```
 
 ### Making Authenticated Requests
@@ -171,7 +171,7 @@ The Lambda function receives the JWT secret via environment variable:
 ```yaml
 Environment:
   Variables:
-    PUBLIC_JWT_SECRET: !Ref PublicJwtSecret
+    MARKETING_API_JWT_SECRET: !Ref PublicJwtSecret
 ```
 
 ### Deployment Commands
@@ -191,7 +191,7 @@ sam deploy --parameter-overrides \
 
 ## Security Considerations
 
-1. **Secret Management**: Store `PUBLIC_JWT_SECRET` securely (AWS Secrets Manager, Parameter Store)
+1. **Secret Management**: Store `MARKETING_API_JWT_SECRET` securely (AWS Secrets Manager, Parameter Store)
 2. **Token Expiration**: Use reasonable expiration times (1h-24h recommended)
 3. **Secret Rotation**: Regularly rotate the JWT secret
 4. **HTTPS Only**: Always use HTTPS in production
@@ -226,7 +226,7 @@ Test the complete flow:
 
 ### Common Issues
 
-1. **"PUBLIC_JWT_SECRET environment variable is not set"**
+1. **"MARKETING_API_JWT_SECRET environment variable is not set"**
 
    - Ensure the CloudFormation parameter is set during deployment
    - Check Lambda environment variables in AWS Console

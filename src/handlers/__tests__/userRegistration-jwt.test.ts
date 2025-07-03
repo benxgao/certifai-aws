@@ -44,12 +44,12 @@ describe("UserRegistration Handler with JWT Protection", () => {
 
     // Setup environment variables
     process.env.MAILERLITE_API_KEY = "test-api-key";
-    process.env.PUBLIC_JWT_SECRET = "test-jwt-secret";
+    process.env.MARKETING_API_JWT_SECRET = "test-jwt-secret";
   });
 
   afterEach(() => {
     delete process.env.MAILERLITE_API_KEY;
-    delete process.env.PUBLIC_JWT_SECRET;
+    delete process.env.MARKETING_API_JWT_SECRET;
   });
 
   describe("JWT Authentication", () => {

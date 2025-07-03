@@ -91,7 +91,8 @@ jobs:
             --resolve-s3 \
             --capabilities CAPABILITY_IAM \
             --parameter-overrides \
-              MailerLiteApiKey="${{ secrets.MAILERLITE_API_KEY_DEV }}"
+              MailerLiteApiKey="${{ secrets.MAILERLITE_API_KEY_DEV }}" \
+              MarketingApiJwtSecret="${{ secrets.MARKETING_API_JWT_SECRET }}"
 
   deploy-staging:
     name: Deploy to Staging
@@ -141,7 +142,8 @@ jobs:
             --resolve-s3 \
             --capabilities CAPABILITY_IAM \
             --parameter-overrides \
-              MailerLiteApiKey="${{ secrets.MAILERLITE_API_KEY_STAGING }}"
+              MailerLiteApiKey="${{ secrets.MAILERLITE_API_KEY_STAGING }}" \
+              MarketingApiJwtSecret="${{ secrets.MARKETING_API_JWT_SECRET }}"
 
       - name: Post-deployment health check
         run: |
@@ -211,7 +213,8 @@ jobs:
             --resolve-s3 \
             --capabilities CAPABILITY_IAM \
             --parameter-overrides \
-              MailerLiteApiKey="${{ secrets.MAILERLITE_API_KEY_PROD }}"
+              MailerLiteApiKey="${{ secrets.MAILERLITE_API_KEY_PROD }}" \
+              MarketingApiJwtSecret="${{ secrets.MARKETING_API_JWT_SECRET }}"
 
       - name: Post-deployment health check
         run: |

@@ -27,8 +27,8 @@ describe("JWT Authentication Utility", () => {
   });
 
   describe("verifyJwtToken", () => {
-    it("should return false when PUBLIC_JWT_SECRET is not set", async () => {
-      delete process.env.PUBLIC_JWT_SECRET;
+    it("should return false when MARKETING_API_JWT_SECRET is not set", async () => {
+      delete process.env.MARKETING_API_JWT_SECRET;
 
       const result = await verifyJwtToken("some-token");
 
@@ -36,7 +36,7 @@ describe("JWT Authentication Utility", () => {
     });
 
     it("should return true for valid JWT token", async () => {
-      process.env.PUBLIC_JWT_SECRET = "test-secret-key";
+      process.env.MARKETING_API_JWT_SECRET = "test-secret-key";
       mockJwtVerify.mockResolvedValue({ payload: { userId: "123" } } as any);
 
       const result = await verifyJwtToken("valid-token");
@@ -49,7 +49,7 @@ describe("JWT Authentication Utility", () => {
     });
 
     it("should return false when token verification throws an error", async () => {
-      process.env.PUBLIC_JWT_SECRET = "test-secret-key";
+      process.env.MARKETING_API_JWT_SECRET = "test-secret-key";
       mockJwtVerify.mockRejectedValue(new Error("Verification failed"));
 
       const result = await verifyJwtToken("some-token");

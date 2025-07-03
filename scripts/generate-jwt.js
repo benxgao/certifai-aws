@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * JWT Token Generator for PUBLIC_JWT_SECRET
+ * JWT Token Generator for MARKETING_API_JWT_SECRET
  *
  * This script generates JWT tokens using the same secret that the Lambda function uses.
  * Usage: node generate-jwt.js [payload] [expiration]
@@ -9,7 +9,7 @@
  * Examples:
  *   node generate-jwt.js
  *   node generate-jwt.js '{"userId":"123","role":"admin"}' '24h'
- *   PUBLIC_JWT_SECRET=my-secret node generate-jwt.js
+ *   MARKETING_API_JWT_SECRET=my-secret node generate-jwt.js
  */
 
 import { SignJWT } from "jose";
@@ -17,11 +17,11 @@ import { SignJWT } from "jose";
 async function generateJWT(payload = {}, expirationTime = "1h") {
   try {
     // Get the secret from environment variable
-    const secret = process.env.PUBLIC_JWT_SECRET || "default-secret-key";
+    const secret = process.env.MARKETING_API_JWT_SECRET || "default-secret-key";
 
     if (secret === "default-secret-key") {
       console.warn(
-        "⚠️  Warning: Using default secret. Set PUBLIC_JWT_SECRET environment variable for production use."
+        "⚠️  Warning: Using default secret. Set MARKETING_API_JWT_SECRET environment variable for production use."
       );
     }
 
