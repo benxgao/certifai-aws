@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { UserRegistrationRequest } from "../types";
+import { UserRegistrationRequest } from "../types/index.js";
 
 export const userRegistrationSchema = Joi.object<UserRegistrationRequest>({
   email: Joi.string().email().required().messages({

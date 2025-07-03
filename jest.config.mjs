@@ -18,5 +18,7 @@ export default {
   // Mock jose module completely to avoid ES module issues
   moduleNameMapper: {
     "^jose$": "<rootDir>/src/__mocks__/jose.ts",
+    // Map .js extensions to .ts for Jest module resolution
+    "^(\\.{1,2}/.*)\\.js$": "$1",
   },
 };

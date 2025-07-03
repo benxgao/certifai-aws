@@ -1,5 +1,5 @@
 import { jwtVerify } from "jose";
-import { logger } from "./logger";
+import { logger } from "./logger.js";
 
 /**
  * Verifies a JWT token using the MARKETING_API_JWT_SECRET environment variable

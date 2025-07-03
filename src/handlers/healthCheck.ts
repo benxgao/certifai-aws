@@ -3,12 +3,12 @@ import {
   APIGatewayProxyResult,
   Context,
 } from "aws-lambda";
-import { HealthCheckResponse } from "../types";
+import { HealthCheckResponse } from "../types/index.js";
 import {
   createSuccessResponse,
   createInternalServerErrorResponse,
-} from "../utils/response";
-import { logger } from "../utils/logger";
+} from "../utils/response.js";
+import { logger } from "../utils/logger.js";
 
 export const handler = async (
   event: APIGatewayProxyEvent,

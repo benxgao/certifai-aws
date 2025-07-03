@@ -1,6 +1,6 @@
 import axios, { AxiosResponse } from "axios";
-import { UserRegistrationRequest } from "../types";
-import { logger } from "../utils/logger";
+import { UserRegistrationRequest } from "../types/index.js";
+import { logger } from "../utils/logger.js";
 
 interface MailerLiteSubscriber {
   email: string;

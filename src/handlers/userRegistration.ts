@@ -3,17 +3,20 @@ import {
   APIGatewayProxyResult,
   Context,
 } from "aws-lambda";
-import { UserRegistrationRequest, UserRegistrationResponse } from "../types";
+import {
+  UserRegistrationRequest,
+  UserRegistrationResponse,
+} from "../types/index.js";
 import {
   createSuccessResponse,
   createBadRequestResponse,
   createInternalServerErrorResponse,
-} from "../utils/response";
-import { validateUserRegistration } from "../utils/validation";
-import { MailerLiteService } from "../services/mailerLiteService";
-import { logger } from "../utils/logger";
-import { verifyJwtToken, extractTokenFromHeader } from "../utils/jwtAuth";
-import { createUnauthorizedResponse } from "../utils/response";
+} from "../utils/response.js";
+import { validateUserRegistration } from "../utils/validation.js";
+import { MailerLiteService } from "../services/mailerLiteService.js";
+import { logger } from "../utils/logger.js";
+import { verifyJwtToken, extractTokenFromHeader } from "../utils/jwtAuth.js";
+import { createUnauthorizedResponse } from "../utils/response.js";
 
 export const handler = async (
   event: APIGatewayProxyEvent,

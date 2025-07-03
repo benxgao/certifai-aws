@@ -1,4 +1,4 @@
-import { ApiResponse, ErrorResponse } from "../types";
+import { ApiResponse, ErrorResponse } from "../types/index.js";
 
 export const createResponse = (
   statusCode: number,
