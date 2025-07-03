@@ -128,6 +128,12 @@ Health check endpoint that returns service status.
 
 Subscribes a user with MailerLite.
 
+**Default Values:**
+
+- `subscribed_at`: Current date/time in "yyyy-MM-dd HH:mm:ss" format if not provided
+- `status`: "active" if not provided
+- `ip_address`: Auto-detected from request if not provided
+
 **Request Body:**
 
 ```json
@@ -140,7 +146,10 @@ Subscribes a user with MailerLite.
     "company": "Example Corp",
     "phone": "+1234567890"
   },
-  "groups": ["newsletter", "updates"] // Optional group IDs
+  "groups": ["newsletter", "updates"], // Optional group IDs
+  "subscribed_at": "2025-07-03 10:30:00", // Optional (defaults to current date/time)
+  "ip_address": "192.168.1.1", // Optional (auto-detected from request)
+  "status": "active" // Optional (defaults to "active")
 }
 ```
 

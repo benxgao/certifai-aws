@@ -10,6 +10,14 @@ This guide provides step-by-step instructions for testing the user subscription 
 - **Authentication**: Bearer Token (JWT)
 - **Function**: Subscribes a new user with MailerLite service
 
+## Default Values
+
+The endpoint automatically sets default values for certain fields when not provided:
+
+- **subscribed_at**: Current date/time in "yyyy-MM-dd HH:mm:ss" format
+- **status**: "active"
+- **ip_address**: Auto-detected from request source IP
+
 ## Prerequisites
 
 1. The SAM application must be deployed or running locally
@@ -78,7 +86,7 @@ https://your-api-gateway-id.execute-api.region.amazonaws.com/stage/subscribe
   },
   "groups": ["newsletter", "product_updates"],
   "status": "active",
-  "subscribed_at": "2025-07-03T10:30:00Z",
+  "subscribed_at": "2025-07-03 10:30:00",
   "ip_address": "192.168.1.100"
 }
 ```

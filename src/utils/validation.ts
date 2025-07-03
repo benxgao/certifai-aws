@@ -18,9 +18,13 @@ export const userSubscriptionSchema = Joi.object<UserSubscriptionRequest>({
     .pattern(Joi.string(), Joi.alternatives().try(Joi.string(), Joi.number()))
     .optional(),
   groups: Joi.array().items(Joi.string()).optional(),
-  subscribed_at: Joi.string().isoDate().optional().messages({
-    "string.isoDate": "subscribed_at must be a valid ISO date string",
-  }),
+  subscribed_at: Joi.string()
+    .pattern(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)
+    .optional()
+    .messages({
+      "string.pattern.base":
+        "subscribed_at must be in format 'yyyy-MM-dd HH:mm:ss'",
+    }),
   ip_address: Joi.string().ip().optional().messages({
     "string.ip": "ip_address must be a valid IP address",
   }),

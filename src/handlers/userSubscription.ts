@@ -17,6 +17,7 @@ import { MailerLiteService } from "../services/mailerLiteService.js";
 import { logger } from "../utils/logger.js";
 import { verifyJwtToken, extractTokenFromHeader } from "../utils/jwtAuth.js";
 import { createUnauthorizedResponse } from "../utils/response.js";
+import { format } from "date-fns";
 
 export const handler = async (
   event: APIGatewayProxyEvent,
@@ -79,6 +80,15 @@ export const handler = async (
     // Add IP address from request context if not provided in body
     if (!validatedData.ip_address && event.requestContext.identity.sourceIp) {
       validatedData.ip_address = event.requestContext.identity.sourceIp;
+    }
+
+    // Set default values for subscribed_at and status if not provided
+    if (!validatedData.subscribed_at) {
+      validatedData.subscribed_at = format(new Date(), "yyyy-MM-dd HH:mm:ss");
+    }
+
+    if (!validatedData.status) {
+      validatedData.status = "active";
     }
 
     // Check for MailerLite API key

@@ -57,9 +57,11 @@ describe("UserSubscription Handler with JWT Protection", () => {
       const result = await handler(mockEvent, mockContext);
 
       expect(result.statusCode).toBe(401);
-      expect(JSON.parse(result.body)).toEqual({
-        message: "Authentication token is required",
-      });
+      const responseBody = JSON.parse(result.body);
+      expect(responseBody).toHaveProperty(
+        "message",
+        "Authentication token is required"
+      );
     });
 
     it("should return 401 when JWT token is invalid", async () => {
@@ -74,9 +76,11 @@ describe("UserSubscription Handler with JWT Protection", () => {
       const result = await handler(mockEvent, mockContext);
 
       expect(result.statusCode).toBe(401);
-      expect(JSON.parse(result.body)).toEqual({
-        message: "Invalid authentication token",
-      });
+      const responseBody = JSON.parse(result.body);
+      expect(responseBody).toHaveProperty(
+        "message",
+        "Invalid authentication token"
+      );
     });
 
     it("should proceed when valid JWT token is provided", async () => {
@@ -126,9 +130,11 @@ describe("UserSubscription Handler with JWT Protection", () => {
       const result = await handler(mockEvent, mockContext);
 
       expect(result.statusCode).toBe(400);
-      expect(JSON.parse(result.body)).toEqual({
-        message: "Request body is required",
-      });
+      const responseBody = JSON.parse(result.body);
+      expect(responseBody).toHaveProperty(
+        "message",
+        "Request body is required"
+      );
     });
 
     it("should return 400 when request body is invalid JSON", async () => {
@@ -137,9 +143,8 @@ describe("UserSubscription Handler with JWT Protection", () => {
       const result = await handler(mockEvent, mockContext);
 
       expect(result.statusCode).toBe(400);
-      expect(JSON.parse(result.body)).toEqual({
-        message: "Invalid JSON format",
-      });
+      const responseBody = JSON.parse(result.body);
+      expect(responseBody).toHaveProperty("message", "Invalid JSON format");
     });
 
     it("should return 400 when email is missing", async () => {
@@ -184,9 +189,11 @@ describe("UserSubscription Handler with JWT Protection", () => {
       const result = await handler(mockEvent, mockContext);
 
       expect(result.statusCode).toBe(500);
-      expect(JSON.parse(result.body)).toEqual({
-        message: "Service configuration error",
-      });
+      const responseBody = JSON.parse(result.body);
+      expect(responseBody).toHaveProperty(
+        "message",
+        "Service configuration error"
+      );
     });
 
     it("should successfully create subscriber when everything is valid", async () => {
@@ -213,12 +220,18 @@ describe("UserSubscription Handler with JWT Protection", () => {
         message: "User subscribed successfully",
         subscriberId: "subscriber-123",
       });
-      expect(mockCreateSubscriber).toHaveBeenCalledWith({
-        email: "test@example.com",
-        firstName: "John",
-        lastName: "Doe",
-        ip_address: "127.0.0.1", // Should be added from request context
-      });
+      expect(mockCreateSubscriber).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: "test@example.com",
+          firstName: "John",
+          lastName: "Doe",
+          ip_address: "127.0.0.1",
+          status: "active",
+          subscribed_at: expect.stringMatching(
+            /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/
+          ),
+        })
+      );
     });
 
     it("should handle MailerLite service errors", async () => {
@@ -239,9 +252,8 @@ describe("UserSubscription Handler with JWT Protection", () => {
       const result = await handler(mockEvent, mockContext);
 
       expect(result.statusCode).toBe(400);
-      expect(JSON.parse(result.body)).toEqual({
-        message: "MailerLite API error",
-      });
+      const responseBody = JSON.parse(result.body);
+      expect(responseBody).toHaveProperty("message", "MailerLite API error");
     });
   });
 
@@ -279,12 +291,18 @@ describe("UserSubscription Handler with JWT Protection", () => {
 
       await handler(mockEvent, mockContext);
 
-      expect(mockCreateSubscriber).toHaveBeenCalledWith({
-        email: "test@example.com",
-        firstName: "John",
-        lastName: "Doe",
-        ip_address: "192.168.1.1", // Should use the provided IP
-      });
+      expect(mockCreateSubscriber).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: "test@example.com",
+          firstName: "John",
+          lastName: "Doe",
+          ip_address: "192.168.1.1",
+          status: "active",
+          subscribed_at: expect.stringMatching(
+            /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/
+          ),
+        })
+      );
     });
 
     it("should auto-fill IP address from request context when not provided", async () => {
@@ -304,12 +322,119 @@ describe("UserSubscription Handler with JWT Protection", () => {
 
       await handler(mockEvent, mockContext);
 
-      expect(mockCreateSubscriber).toHaveBeenCalledWith({
+      expect(mockCreateSubscriber).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: "test@example.com",
+          firstName: "John",
+          lastName: "Doe",
+          ip_address: "127.0.0.1",
+          status: "active",
+          subscribed_at: expect.stringMatching(
+            /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/
+          ),
+        })
+      );
+    });
+  });
+
+  describe("Default Values", () => {
+    beforeEach(() => {
+      // Setup valid JWT for these tests
+      mockEvent.headers.Authorization = "Bearer valid-token";
+      jest
+        .spyOn(jwtAuth, "extractTokenFromHeader")
+        .mockReturnValue("valid-token");
+      jest.spyOn(jwtAuth, "verifyJwtToken").mockResolvedValue(true);
+    });
+
+    it("should set default subscribed_at when not provided", async () => {
+      const mockCreateSubscriber = jest
+        .fn()
+        .mockResolvedValue("subscriber-123");
+      (
+        mailerLiteService.MailerLiteService as jest.MockedClass<
+          typeof mailerLiteService.MailerLiteService
+        >
+      ).mockImplementation(
+        () =>
+          ({
+            createSubscriber: mockCreateSubscriber,
+          } as any)
+      );
+
+      const beforeCall = new Date();
+      await handler(mockEvent, mockContext);
+      const afterCall = new Date();
+
+      expect(mockCreateSubscriber).toHaveBeenCalled();
+      const callArgs = mockCreateSubscriber.mock.calls[0][0];
+
+      expect(callArgs).toHaveProperty("subscribed_at");
+      expect(callArgs.subscribed_at).toMatch(
+        /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/
+      );
+
+      // Parse the date to ensure it's within the test execution timeframe
+      const subscribedDate = new Date(callArgs.subscribed_at.replace(" ", "T"));
+      expect(subscribedDate.getTime()).toBeGreaterThanOrEqual(
+        beforeCall.getTime() - 1000
+      ); // Allow 1 second margin
+      expect(subscribedDate.getTime()).toBeLessThanOrEqual(
+        afterCall.getTime() + 1000
+      );
+    });
+
+    it("should set default status to 'active' when not provided", async () => {
+      const mockCreateSubscriber = jest
+        .fn()
+        .mockResolvedValue("subscriber-123");
+      (
+        mailerLiteService.MailerLiteService as jest.MockedClass<
+          typeof mailerLiteService.MailerLiteService
+        >
+      ).mockImplementation(
+        () =>
+          ({
+            createSubscriber: mockCreateSubscriber,
+          } as any)
+      );
+
+      await handler(mockEvent, mockContext);
+
+      expect(mockCreateSubscriber).toHaveBeenCalled();
+      const callArgs = mockCreateSubscriber.mock.calls[0][0];
+      expect(callArgs.status).toBe("active");
+    });
+
+    it("should use provided values when subscribed_at and status are explicitly set", async () => {
+      mockEvent.body = JSON.stringify({
         email: "test@example.com",
         firstName: "John",
         lastName: "Doe",
-        ip_address: "127.0.0.1", // Should be added from request context
+        subscribed_at: "2025-01-01 12:00:00",
+        status: "unconfirmed",
       });
+
+      const mockCreateSubscriber = jest
+        .fn()
+        .mockResolvedValue("subscriber-123");
+      (
+        mailerLiteService.MailerLiteService as jest.MockedClass<
+          typeof mailerLiteService.MailerLiteService
+        >
+      ).mockImplementation(
+        () =>
+          ({
+            createSubscriber: mockCreateSubscriber,
+          } as any)
+      );
+
+      await handler(mockEvent, mockContext);
+
+      expect(mockCreateSubscriber).toHaveBeenCalled();
+      const callArgs = mockCreateSubscriber.mock.calls[0][0];
+      expect(callArgs.subscribed_at).toBe("2025-01-01 12:00:00");
+      expect(callArgs.status).toBe("unconfirmed");
     });
   });
 });
