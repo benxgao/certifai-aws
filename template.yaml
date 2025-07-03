@@ -3,7 +3,7 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   certifai-aws-lambda
 
-  AWS Lambda functions for health check and MailerLite user registration
+  AWS Lambda functions for health check and MailerLite user subscription
 
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
@@ -73,17 +73,17 @@ Resources:
             Method: get
             RestApiId: !Ref ApiGateway
 
-  # User Registration Function
-  UserRegistrationFunction:
+  # User Subscription Function
+  UserSubscriptionFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: dist/
-      Handler: handlers/userRegistration.handler
+      Handler: handlers/userSubscription.handler
       Events:
-        UserRegistration:
+        UserSubscription:
           Type: Api
           Properties:
-            Path: /register
+            Path: /subscribe
             Method: post
             RestApiId: !Ref ApiGateway
 
@@ -99,6 +99,6 @@ Outputs:
     Description: "Health Check Lambda Function ARN"
     Value: !GetAtt HealthCheckFunction.Arn
 
-  UserRegistrationFunction:
-    Description: "User Registration Lambda Function ARN"
-    Value: !GetAtt UserRegistrationFunction.Arn
+  UserSubscriptionFunction:
+    Description: "User Subscription Lambda Function ARN"
+    Value: !GetAtt UserSubscriptionFunction.Arn

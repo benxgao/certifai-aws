@@ -28,23 +28,25 @@ curl -X GET http://localhost:3000/health \
   -v
 ```
 
-## User Registration Examples
+## User Subscription Examples
 
-### Basic Registration
+### Basic Subscription
 
 ```bash
-curl -X POST http://localhost:3000/register \
+curl -X POST http://localhost:3000/subscribe \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
     "email": "test@example.com"
   }'
 ```
 
-### Complete Registration
+### Complete Subscription
 
 ```bash
-curl -X POST http://localhost:3000/register \
+curl -X POST http://localhost:3000/subscribe \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
     "email": "john.doe@example.com",
     "firstName": "John",
@@ -61,8 +63,9 @@ curl -X POST http://localhost:3000/register \
 ### Invalid Email Test
 
 ```bash
-curl -X POST http://localhost:3000/register \
+curl -X POST http://localhost:3000/subscribe \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
     "email": "invalid-email"
   }'
@@ -71,8 +74,9 @@ curl -X POST http://localhost:3000/register \
 ### Missing Email Test
 
 ```bash
-curl -X POST http://localhost:3000/register \
+curl -X POST http://localhost:3000/subscribe \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
     "firstName": "John",
     "lastName": "Doe"
@@ -82,15 +86,17 @@ curl -X POST http://localhost:3000/register \
 ### Empty Body Test
 
 ```bash
-curl -X POST http://localhost:3000/register \
-  -H "Content-Type: application/json"
+curl -X POST http://localhost:3000/subscribe \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 ### Invalid JSON Test
 
 ```bash
-curl -X POST http://localhost:3000/register \
+curl -X POST http://localhost:3000/subscribe \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{"email": "test@example.com"'
 ```
 
@@ -102,8 +108,9 @@ curl -X POST http://localhost:3000/register \
 # Health check
 http GET localhost:3000/health
 
-# User registration
-http POST localhost:3000/register \
+# User subscription
+http POST localhost:3000/subscribe \
+  Authorization:"Bearer YOUR_JWT_TOKEN" \
   email=test@example.com \
   firstName=John \
   lastName=Doe
@@ -118,11 +125,13 @@ Import these requests into Postman:
 - Method: GET
 - URL: http://localhost:3000/health
 
-**User Registration Request:**
+**User Subscription Request:**
 
 - Method: POST
-- URL: http://localhost:3000/register
-- Headers: Content-Type: application/json
+- URL: http://localhost:3000/subscribe
+- Headers:
+  - Content-Type: application/json
+  - Authorization: Bearer YOUR_JWT_TOKEN
 - Body (raw JSON):
 
 ```json
@@ -149,12 +158,12 @@ Import these requests into Postman:
 }
 ```
 
-### Registration Success
+### Subscription Success
 
 ```json
 {
   "success": true,
-  "message": "User registered successfully",
+  "message": "User subscribed successfully",
   "subscriberId": "12345"
 }
 ```
@@ -187,11 +196,11 @@ Import these requests into Postman:
 # Test health endpoint
 ab -n 100 -c 10 http://localhost:3000/health
 
-# Test registration endpoint
-ab -n 50 -c 5 -p registration.json -T application/json http://localhost:3000/register
+# Test subscription endpoint
+ab -n 50 -c 5 -p subscription.json -T application/json -H "Authorization: Bearer YOUR_JWT_TOKEN" http://localhost:3000/subscribe
 ```
 
-Create `registration.json` file:
+Create `subscription.json` file:
 
 ```json
 {
@@ -207,8 +216,8 @@ Create `registration.json` file:
 # Test health endpoint
 wrk -t2 -c10 -d30s http://localhost:3000/health
 
-# Test registration endpoint with POST data
-wrk -t2 -c5 -d30s -s post.lua http://localhost:3000/register
+# Test subscription endpoint with POST data
+wrk -t2 -c5 -d30s -s post.lua http://localhost:3000/subscribe
 ```
 
 Create `post.lua` file:
@@ -217,6 +226,7 @@ Create `post.lua` file:
 wrk.method = "POST"
 wrk.body   = '{"email":"loadtest@example.com","firstName":"Load","lastName":"Test"}'
 wrk.headers["Content-Type"] = "application/json"
+wrk.headers["Authorization"] = "Bearer YOUR_JWT_TOKEN"
 ```
 
 ## Debugging Tips

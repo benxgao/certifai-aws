@@ -11,15 +11,18 @@ export interface HealthCheckResponse {
   environment: string;
 }
 
-export interface UserRegistrationRequest {
+export interface UserSubscriptionRequest {
   email: string;
   firstName?: string;
   lastName?: string;
   fields?: Record<string, string | number>;
   groups?: string[];
+  subscribed_at?: string;
+  ip_address?: string;
+  status?: string;
 }
 
-export interface UserRegistrationResponse {
+export interface UserSubscriptionResponse {
   success: boolean;
   message: string;
   subscriberId?: string;

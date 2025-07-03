@@ -1,7 +1,7 @@
 import Joi from "joi";
-import { UserRegistrationRequest } from "../types/index.js";
+import { UserSubscriptionRequest } from "../types/index.js";
 
-export const userRegistrationSchema = Joi.object<UserRegistrationRequest>({
+export const userSubscriptionSchema = Joi.object<UserSubscriptionRequest>({
   email: Joi.string().email().required().messages({
     "string.email": "Please provide a valid email address",
     "any.required": "Email is required",
@@ -18,16 +18,29 @@ export const userRegistrationSchema = Joi.object<UserRegistrationRequest>({
     .pattern(Joi.string(), Joi.alternatives().try(Joi.string(), Joi.number()))
     .optional(),
   groups: Joi.array().items(Joi.string()).optional(),
+  subscribed_at: Joi.string().isoDate().optional().messages({
+    "string.isoDate": "subscribed_at must be a valid ISO date string",
+  }),
+  ip_address: Joi.string().ip().optional().messages({
+    "string.ip": "ip_address must be a valid IP address",
+  }),
+  status: Joi.string()
+    .valid("active", "unsubscribed", "unconfirmed", "bounced", "junk")
+    .optional()
+    .messages({
+      "any.only":
+        "status must be one of: active, unsubscribed, unconfirmed, bounced, junk",
+    }),
 });
 
-export const validateUserRegistration = (
+export const validateUserSubscription = (
   data: unknown
 ): {
   isValid: boolean;
   error?: string;
-  value?: UserRegistrationRequest;
+  value?: UserSubscriptionRequest;
 } => {
-  const { error, value } = userRegistrationSchema.validate(data, {
+  const { error, value } = userSubscriptionSchema.validate(data, {
     abortEarly: false,
     stripUnknown: true,
   });

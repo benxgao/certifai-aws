@@ -4,15 +4,15 @@ import {
   Context,
 } from "aws-lambda";
 import {
-  UserRegistrationRequest,
-  UserRegistrationResponse,
+  UserSubscriptionRequest,
+  UserSubscriptionResponse,
 } from "../types/index.js";
 import {
   createSuccessResponse,
   createBadRequestResponse,
   createInternalServerErrorResponse,
 } from "../utils/response.js";
-import { validateUserRegistration } from "../utils/validation.js";
+import { validateUserSubscription } from "../utils/validation.js";
 import { MailerLiteService } from "../services/mailerLiteService.js";
 import { logger } from "../utils/logger.js";
 import { verifyJwtToken, extractTokenFromHeader } from "../utils/jwtAuth.js";
@@ -23,7 +23,7 @@ export const handler = async (
   context: Context
 ): Promise<APIGatewayProxyResult> => {
   try {
-    logger.info("User registration endpoint called", {
+    logger.info("User subscription endpoint called", {
       requestId: context.awsRequestId,
       sourceIp: event.requestContext.identity.sourceIp,
     });
@@ -66,7 +66,7 @@ export const handler = async (
     }
 
     // Validate request data
-    const validation = validateUserRegistration(userData);
+    const validation = validateUserSubscription(userData);
     if (!validation.isValid) {
       logger.warn("Validation failed", { error: validation.error, userData });
       return createBadRequestResponse(
@@ -74,7 +74,7 @@ export const handler = async (
       );
     }
 
-    const validatedData = validation.value as UserRegistrationRequest;
+    const validatedData = validation.value as UserSubscriptionRequest;
 
     // Add IP address from request context if not provided in body
     if (!validatedData.ip_address && event.requestContext.identity.sourceIp) {
@@ -96,13 +96,13 @@ export const handler = async (
         validatedData
       );
 
-      const response: UserRegistrationResponse = {
+      const response: UserSubscriptionResponse = {
         success: true,
-        message: "User registered successfully",
+        message: "User subscribed successfully",
         subscriberId,
       };
 
-      logger.info("User registration completed successfully", {
+      logger.info("User subscription completed successfully", {
         email: validatedData.email,
         subscriberId,
         requestId: context.awsRequestId,
@@ -116,15 +116,15 @@ export const handler = async (
       const errorMessage =
         mailerLiteError instanceof Error
           ? mailerLiteError.message
-          : "Failed to register user with MailerLite";
+          : "Failed to subscribe user with MailerLite";
 
-      logger.error("MailerLite registration failed", mailerLiteError, {
+      logger.error("MailerLite subscription failed", mailerLiteError, {
         email: validatedData.email,
         requestId: context.awsRequestId,
       });
 
       // Return a user-friendly error response
-      const response: UserRegistrationResponse = {
+      const response: UserSubscriptionResponse = {
         success: false,
         message: errorMessage,
       };
@@ -132,7 +132,7 @@ export const handler = async (
       return createBadRequestResponse(response.message);
     }
   } catch (error) {
-    logger.error("Unexpected error in user registration", error, {
+    logger.error("Unexpected error in user subscription", error, {
       requestId: context.awsRequestId,
     });
 

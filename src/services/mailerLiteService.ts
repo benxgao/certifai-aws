@@ -1,11 +1,14 @@
 import axios, { AxiosResponse } from "axios";
-import { UserRegistrationRequest } from "../types/index.js";
+import { UserSubscriptionRequest } from "../types/index.js";
 import { logger } from "../utils/logger.js";
 
 interface MailerLiteSubscriber {
   email: string;
   fields?: Record<string, string | number>;
   groups?: string[];
+  subscribed_at?: string;
+  ip_address?: string;
+  status?: string;
 }
 
 interface MailerLiteResponse {
@@ -27,7 +30,7 @@ export class MailerLiteService {
     this.apiKey = apiKey;
   }
 
-  async createSubscriber(userData: UserRegistrationRequest): Promise<string> {
+  async createSubscriber(userData: UserSubscriptionRequest): Promise<string> {
     try {
       logger.info("Creating MailerLite subscriber", { email: userData.email });
 
@@ -39,6 +42,11 @@ export class MailerLiteService {
           ...(userData.lastName && { last_name: userData.lastName }),
         },
         groups: userData.groups,
+        ...(userData.subscribed_at && {
+          subscribed_at: userData.subscribed_at,
+        }),
+        ...(userData.ip_address && { ip_address: userData.ip_address }),
+        ...(userData.status && { status: userData.status }),
       };
 
       const response: AxiosResponse<MailerLiteResponse> = await axios.post(

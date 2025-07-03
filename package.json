@@ -1,7 +1,7 @@
 {
   "name": "certifai-aws-lambda",
   "version": "1.0.0",
-  "description": "AWS Lambda functions for health check and MailerLite user registration",
+  "description": "AWS Lambda functions for health check and MailerLite user subscription",
   "main": "index.js",
   "type": "module",
   "scripts": {

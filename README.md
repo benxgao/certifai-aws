@@ -3,7 +3,7 @@
 This project provides AWS Lambda functions for:
 
 - Health check endpoint
-- User registration with MailerLite integration
+- User subscription with MailerLite integration
 
 ## 🏗️ Architecture
 
@@ -24,7 +24,7 @@ certifai-aws/
 ├── src/
 │   ├── handlers/           # Lambda function handlers
 │   │   ├── healthCheck.ts
-│   │   ├── userRegistration.ts
+│   │   ├── userSubscription.ts
 │   │   └── __tests__/      # Handler tests
 │   ├── services/           # External service integrations
 │   │   └── mailerLiteService.ts
@@ -94,11 +94,12 @@ This will start the API Gateway locally at `http://localhost:3000`
 curl http://localhost:3000/health
 ```
 
-**User Registration:**
+**User Subscription:**
 
 ```bash
-curl -X POST http://localhost:3000/register \
+curl -X POST http://localhost:3000/subscribe \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
     "email": "user@example.com",
     "firstName": "John",
@@ -123,9 +124,9 @@ Health check endpoint that returns service status.
 }
 ```
 
-### POST /register
+### POST /subscribe
 
-Registers a user with MailerLite.
+Subscribes a user with MailerLite.
 
 **Request Body:**
 
@@ -148,7 +149,7 @@ Registers a user with MailerLite.
 ```json
 {
   "success": true,
-  "message": "User registered successfully",
+  "message": "User subscribed successfully",
   "subscriberId": "12345"
 }
 ```
@@ -242,7 +243,7 @@ Example log entry:
 ```json
 {
   "level": "info",
-  "message": "User registration completed successfully",
+  "message": "User subscription completed successfully",
   "timestamp": "2023-06-19T10:00:00.000Z",
   "meta": {
     "email": "user@example.com",
