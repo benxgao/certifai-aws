@@ -44,7 +44,7 @@ Resources:
     Properties:
       StageName: !Ref Environment
       Cors:
-        AllowMethods: "'GET,POST,OPTIONS'"
+        AllowMethods: "'GET,POST,PUT,OPTIONS'"
         AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
         AllowOrigin: "'*'"
       GatewayResponses:
@@ -87,6 +87,20 @@ Resources:
             Method: post
             RestApiId: !Ref ApiGateway
 
+  # User Unsubscribe Function
+  UserUnsubscribeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: handlers/userUnsubscribe.handler
+      Events:
+        UserUnsubscribe:
+          Type: Api
+          Properties:
+            Path: /unsubscribe/{id}
+            Method: put
+            RestApiId: !Ref ApiGateway
+
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM
@@ -102,3 +116,7 @@ Outputs:
   UserSubscriptionFunction:
     Description: "User Subscription Lambda Function ARN"
     Value: !GetAtt UserSubscriptionFunction.Arn
+
+  UserUnsubscribeFunction:
+    Description: "User Unsubscribe Lambda Function ARN"
+    Value: !GetAtt UserUnsubscribeFunction.Arn

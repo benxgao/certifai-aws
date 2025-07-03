@@ -56,3 +56,9 @@ export const createInternalServerErrorResponse = (
 ): ApiResponse => {
   return createErrorResponse(500, "Internal Server Error", message);
 };
+
+export const createNotFoundResponse = (
+  message: string = "Not Found"
+): ApiResponse => {
+  return createErrorResponse(404, "Not Found", message);
+};

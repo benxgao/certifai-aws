@@ -33,3 +33,9 @@ export interface ErrorResponse {
   message: string;
   timestamp: string;
 }
+
+export interface UserUnsubscribeResponse {
+  success: boolean;
+  message: string;
+  subscriberId?: string;
+}

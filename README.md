@@ -130,7 +130,7 @@ Subscribes a user with MailerLite.
 
 **Default Values:**
 
-- `subscribed_at`: Current date/time in "yyyy-MM-dd HH:mm:ss" format if not provided
+- `subscribed_at`: Current date/time in "yyyy-MM-dd HH:mm:ss" format (using date-fns) if not provided
 - `status`: "active" if not provided
 - `ip_address`: Auto-detected from request if not provided
 

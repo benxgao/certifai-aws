@@ -99,6 +99,65 @@ export class MailerLiteService {
     }
   }
 
+  async updateSubscriber(
+    subscriberId: string,
+    updateData: { status: string; unsubscribed_at: string }
+  ): Promise<void> {
+    try {
+      logger.info("Updating MailerLite subscriber", {
+        subscriberId,
+        status: updateData.status,
+        unsubscribed_at: updateData.unsubscribed_at,
+      });
+
+      await axios.put(
+        `${this.baseUrl}/subscribers/${subscriberId}`,
+        updateData,
+        {
+          headers: {
+            Authorization: `Bearer ${this.apiKey}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          timeout: 10000,
+        }
+      );
+
+      logger.info("Successfully updated MailerLite subscriber", {
+        subscriberId,
+        status: updateData.status,
+      });
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data?.message || error.message;
+        const statusCode = error.response?.status;
+
+        logger.error("MailerLite API error during update", error, {
+          subscriberId,
+          statusCode,
+          errorMessage,
+        });
+
+        // Handle specific MailerLite errors
+        if (statusCode === 404) {
+          throw new Error("Subscriber not found");
+        } else if (statusCode === 401) {
+          throw new Error("Invalid MailerLite API key");
+        } else if (statusCode === 429) {
+          throw new Error("Rate limit exceeded. Please try again later");
+        }
+
+        throw new Error(`MailerLite API error: ${errorMessage}`);
+      }
+
+      logger.error("Unexpected error updating MailerLite subscriber", error, {
+        subscriberId,
+      });
+
+      throw new Error("Failed to update subscriber due to unexpected error");
+    }
+  }
+
   async validateApiKey(): Promise<boolean> {
     try {
       await axios.get(`${this.baseUrl}/me`, {
