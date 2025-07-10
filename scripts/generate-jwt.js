@@ -90,6 +90,7 @@ if (args.length > 0) {
     payload = JSON.parse(args[0]);
   } catch (error) {
     console.error("❌ Invalid JSON payload:", args[0]);
+    console.error(`error: ${error.message}`);
     process.exit(1);
   }
 }

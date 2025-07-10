@@ -19,6 +19,15 @@ interface MailerLiteResponse {
   };
 }
 
+interface MailerLiteGroup {
+  id: string;
+  name: string;
+}
+
+interface MailerLiteGroupsResponse {
+  data: MailerLiteGroup[];
+}
+
 export class MailerLiteService {
   private readonly apiKey: string;
   private readonly baseUrl = "https://connect.mailerlite.com/api";
@@ -34,6 +43,29 @@ export class MailerLiteService {
     try {
       logger.info("Creating MailerLite subscriber", { email: userData.email });
 
+      // Convert group names to IDs if groups are provided
+      let groupIds: string[] | undefined;
+      if (userData.groups && userData.groups.length > 0) {
+        // Check if groups contain names (non-numeric strings) that need conversion
+        const hasGroupNames = userData.groups.some(
+          (group) =>
+            typeof group === "string" &&
+            isNaN(Number(group)) &&
+            group.trim() !== ""
+        );
+
+        if (hasGroupNames) {
+          logger.info("Converting group names to IDs", {
+            groups: userData.groups,
+          });
+          // Convert the entire array - the conversion function will handle mixed scenarios
+          groupIds = await this.convertGroupNamesToIds(userData.groups);
+        } else {
+          // Groups are already IDs
+          groupIds = userData.groups;
+        }
+      }
+
       const subscriberData: MailerLiteSubscriber = {
         email: userData.email,
         fields: {
@@ -41,7 +73,7 @@ export class MailerLiteService {
           ...(userData.firstName && { first_name: userData.firstName }),
           ...(userData.lastName && { last_name: userData.lastName }),
         },
-        groups: userData.groups,
+        groups: groupIds,
         ...(userData.subscribed_at && {
           subscribed_at: userData.subscribed_at,
         }),
@@ -171,6 +203,104 @@ export class MailerLiteService {
     } catch (error) {
       logger.error("MailerLite API key validation failed", error);
       return false;
+    }
+  }
+
+  async getGroups(): Promise<MailerLiteGroup[]> {
+    try {
+      logger.info("Fetching MailerLite groups");
+
+      const response: AxiosResponse<MailerLiteGroupsResponse> = await axios.get(
+        `${this.baseUrl}/groups`,
+        {
+          headers: {
+            Authorization: `Bearer ${this.apiKey}`,
+            Accept: "application/json",
+          },
+          timeout: 10000,
+        }
+      );
+
+      logger.info("Successfully fetched MailerLite groups", {
+        groupCount: response.data.data.length,
+      });
+
+      return response.data.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data?.message || error.message;
+        const statusCode = error.response?.status;
+
+        logger.error("MailerLite API error fetching groups", error, {
+          statusCode,
+          errorMessage,
+        });
+
+        if (statusCode === 401) {
+          throw new Error("Invalid MailerLite API key");
+        } else if (statusCode === 429) {
+          throw new Error("Rate limit exceeded. Please try again later");
+        }
+
+        throw new Error(`MailerLite API error: ${errorMessage}`);
+      }
+
+      logger.error("Unexpected error fetching MailerLite groups", error);
+      throw new Error("Failed to fetch groups due to unexpected error");
+    }
+  }
+
+  async convertGroupNamesToIds(groupNames: string[]): Promise<string[]> {
+    try {
+      if (!groupNames || groupNames.length === 0) {
+        return [];
+      }
+
+      // Fetch all groups from MailerLite
+      const groups = await this.getGroups();
+
+      // Create a map of group names to IDs (case-insensitive)
+      const nameToIdMap = new Map<string, string>();
+      groups.forEach((group) => {
+        nameToIdMap.set(group.name.toLowerCase(), group.id);
+      });
+
+      // Convert group names to IDs
+      const groupIds: string[] = [];
+      const notFoundGroups: string[] = [];
+
+      for (const group of groupNames) {
+        // Check if it's already a numeric ID
+        if (!isNaN(Number(group)) && group.trim() !== "") {
+          groupIds.push(group);
+        } else {
+          // Try to convert name to ID
+          const groupId = nameToIdMap.get(group.toLowerCase());
+          if (groupId) {
+            groupIds.push(groupId);
+          } else {
+            notFoundGroups.push(group);
+          }
+        }
+      }
+
+      if (notFoundGroups.length > 0) {
+        logger.warn("Some groups not found", {
+          notFoundGroups,
+          availableGroups: groups.map((g) => g.name),
+        });
+        throw new Error(`Groups not found: ${notFoundGroups.join(", ")}`);
+      }
+
+      logger.info("Successfully converted group names to IDs", {
+        originalGroups: groupNames,
+        convertedIds: groupIds,
+      });
+
+      return groupIds;
+    } catch (error) {
+      logger.error("Error converting group names to IDs", error);
+      throw error;
     }
   }
 }
