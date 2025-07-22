@@ -43,7 +43,6 @@ export const handler = async (
     if (!isTokenValid) {
       logger.warn("Invalid JWT token provided", {
         requestId: context.awsRequestId,
-        sourceIp: event.requestContext.identity.sourceIp,
       });
       return createUnauthorizedResponse("Invalid authentication token");
     }
@@ -76,11 +75,6 @@ export const handler = async (
     }
 
     const validatedData = validation.value as UserSubscriptionRequest;
-
-    // Add IP address from request context if not provided in body
-    if (!validatedData.ip_address && event.requestContext.identity.sourceIp) {
-      validatedData.ip_address = event.requestContext.identity.sourceIp;
-    }
 
     // Set default values for subscribed_at and status if not provided
     if (!validatedData.subscribed_at) {
@@ -118,7 +112,7 @@ export const handler = async (
         requestId: context.awsRequestId,
         status: validatedData.status,
         subscribed_at: validatedData.subscribed_at,
-        ip_address: validatedData.ip_address,
+        // ip_address: validatedData.ip_address,
       });
 
       return createSuccessResponse(response);

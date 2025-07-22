@@ -40,7 +40,6 @@ export const handler = async (
     if (!isTokenValid) {
       logger.warn("Invalid JWT token provided", {
         requestId: context.awsRequestId,
-        sourceIp: event.requestContext.identity.sourceIp,
       });
       return createUnauthorizedResponse("Invalid authentication token");
     }
@@ -126,6 +125,41 @@ export const handler = async (
 
       // Step 3: Add subscriber to group
       await mailerLiteService.addSubscriberToGroup(subscriber.id, group.id);
+
+      // Step 4: Update interests field if metadata is provided
+      if (
+        validatedData.metadata &&
+        (validatedData.metadata.certificationInterests ||
+          validatedData.metadata.additionalInterests)
+      ) {
+        try {
+          logger.info("Updating subscriber interests field", {
+            subscriberId: subscriber.id,
+            hasMetadata: !!validatedData.metadata,
+            requestId: context.awsRequestId,
+          });
+
+          const interestsData = JSON.stringify(validatedData.metadata);
+          await mailerLiteService.updateSubscriberFields(subscriber.id, {
+            interests: interestsData,
+          });
+
+          logger.info("Successfully updated subscriber interests", {
+            subscriberId: subscriber.id,
+            requestId: context.awsRequestId,
+          });
+        } catch (interestsError) {
+          // Log the error but don't fail the entire operation
+          logger.error(
+            "Failed to update subscriber interests field",
+            interestsError,
+            {
+              subscriberId: subscriber.id,
+              requestId: context.awsRequestId,
+            }
+          );
+        }
+      }
 
       const response: UserJoinGroupResponse = {
         success: true,

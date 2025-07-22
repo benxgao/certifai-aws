@@ -53,6 +53,7 @@ describe("UserJoinGroup Handler with JWT Protection", () => {
       getSubscriberByEmail: jest.fn(),
       getGroupByName: jest.fn(),
       addSubscriberToGroup: jest.fn(),
+      updateSubscriberFields: jest.fn(),
     } as any;
 
     (
@@ -342,6 +343,149 @@ describe("UserJoinGroup Handler with JWT Protection", () => {
         error: "Internal Server Error",
         message: "Service temporarily unavailable. Please try again later.",
         timestamp: expect.any(String),
+      });
+    });
+
+    it("should successfully process join group request with metadata and update interests field", async () => {
+      const mockBody = {
+        email: "test@example.com",
+        groupName: "Test Group",
+        metadata: {
+          certificationInterests: "AWS, Azure, GCP",
+          additionalInterests: "Security certifications",
+          timestamp: "2025-07-23T10:30:00.000Z",
+        },
+      };
+
+      mockEvent.body = JSON.stringify(mockBody);
+
+      const mockSubscriber = {
+        id: "subscriber-123",
+        email: "test@example.com",
+        status: "active",
+      };
+
+      const mockGroup = {
+        id: "group-456",
+        name: "Test Group",
+      };
+
+      mockMailerLiteService.getSubscriberByEmail.mockResolvedValue(
+        mockSubscriber
+      );
+      mockMailerLiteService.getGroupByName.mockResolvedValue(mockGroup);
+      mockMailerLiteService.addSubscriberToGroup.mockResolvedValue();
+      mockMailerLiteService.updateSubscriberFields.mockResolvedValue();
+
+      const result = await handler(mockEvent, mockContext);
+
+      expect(result.statusCode).toBe(200);
+      expect(JSON.parse(result.body)).toEqual({
+        success: true,
+        message:
+          "Successfully added user test@example.com to group 'Test Group'",
+        subscriberId: "subscriber-123",
+        groupId: "group-456",
+      });
+
+      // Verify that updateSubscriberFields was called with the metadata
+      expect(mockMailerLiteService.updateSubscriberFields).toHaveBeenCalledWith(
+        "subscriber-123",
+        {
+          interests: JSON.stringify(mockBody.metadata),
+        }
+      );
+    });
+
+    it("should not update interests field when metadata has no certification or additional interests", async () => {
+      const mockBody = {
+        email: "test@example.com",
+        groupName: "Test Group",
+        metadata: {
+          timestamp: "2025-07-23T10:30:00.000Z",
+          source: "test",
+        },
+      };
+
+      mockEvent.body = JSON.stringify(mockBody);
+
+      const mockSubscriber = {
+        id: "subscriber-123",
+        email: "test@example.com",
+        status: "active",
+      };
+
+      const mockGroup = {
+        id: "group-456",
+        name: "Test Group",
+      };
+
+      mockMailerLiteService.getSubscriberByEmail.mockResolvedValue(
+        mockSubscriber
+      );
+      mockMailerLiteService.getGroupByName.mockResolvedValue(mockGroup);
+      mockMailerLiteService.addSubscriberToGroup.mockResolvedValue();
+
+      const result = await handler(mockEvent, mockContext);
+
+      expect(result.statusCode).toBe(200);
+      expect(JSON.parse(result.body)).toEqual({
+        success: true,
+        message:
+          "Successfully added user test@example.com to group 'Test Group'",
+        subscriberId: "subscriber-123",
+        groupId: "group-456",
+      });
+
+      // Verify that updateSubscriberFields was NOT called
+      expect(
+        mockMailerLiteService.updateSubscriberFields
+      ).not.toHaveBeenCalled();
+    });
+
+    it("should still succeed even if updating interests field fails", async () => {
+      const mockBody = {
+        email: "test@example.com",
+        groupName: "Test Group",
+        metadata: {
+          certificationInterests: "AWS, Azure, GCP",
+          additionalInterests: "Security certifications",
+        },
+      };
+
+      mockEvent.body = JSON.stringify(mockBody);
+
+      const mockSubscriber = {
+        id: "subscriber-123",
+        email: "test@example.com",
+        status: "active",
+      };
+
+      const mockGroup = {
+        id: "group-456",
+        name: "Test Group",
+      };
+
+      mockMailerLiteService.getSubscriberByEmail.mockResolvedValue(
+        mockSubscriber
+      );
+      mockMailerLiteService.getGroupByName.mockResolvedValue(mockGroup);
+      mockMailerLiteService.addSubscriberToGroup.mockResolvedValue();
+      // Mock updateSubscriberFields to fail
+      mockMailerLiteService.updateSubscriberFields.mockRejectedValue(
+        new Error("Failed to update interests")
+      );
+
+      const result = await handler(mockEvent, mockContext);
+
+      // Should still succeed even if interests update fails
+      expect(result.statusCode).toBe(200);
+      expect(JSON.parse(result.body)).toEqual({
+        success: true,
+        message:
+          "Successfully added user test@example.com to group 'Test Group'",
+        subscriberId: "subscriber-123",
+        groupId: "group-456",
       });
     });
   });

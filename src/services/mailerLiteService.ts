@@ -202,6 +202,70 @@ export class MailerLiteService {
     }
   }
 
+  async updateSubscriberFields(
+    subscriberId: string,
+    fields: Record<string, string | number>
+  ): Promise<void> {
+    try {
+      logger.info("Updating MailerLite subscriber fields", {
+        subscriberId,
+        fieldsKeys: Object.keys(fields),
+      });
+
+      await axios.put(
+        `${this.baseUrl}/subscribers/${subscriberId}`,
+        { fields },
+        {
+          headers: {
+            Authorization: `Bearer ${this.apiKey}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          timeout: 10000,
+        }
+      );
+
+      logger.info("Successfully updated MailerLite subscriber fields", {
+        subscriberId,
+        fieldsKeys: Object.keys(fields),
+      });
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data?.message || error.message;
+        const statusCode = error.response?.status;
+
+        logger.error("MailerLite API error during field update", error, {
+          subscriberId,
+          statusCode,
+          errorMessage,
+        });
+
+        // Handle specific MailerLite errors
+        if (statusCode === 404) {
+          throw new Error("Subscriber not found");
+        } else if (statusCode === 401) {
+          throw new Error("Invalid MailerLite API key");
+        } else if (statusCode === 429) {
+          throw new Error("Rate limit exceeded. Please try again later");
+        }
+
+        throw new Error(`MailerLite API error: ${errorMessage}`);
+      }
+
+      logger.error(
+        "Unexpected error updating MailerLite subscriber fields",
+        error,
+        {
+          subscriberId,
+        }
+      );
+
+      throw new Error(
+        "Failed to update subscriber fields due to unexpected error"
+      );
+    }
+  }
+
   async validateApiKey(): Promise<boolean> {
     try {
       await axios.get(`${this.baseUrl}/me`, {

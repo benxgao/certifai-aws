@@ -21,16 +21,27 @@ Authorization: Bearer <jwt-token>
 ```json
 {
   "email": "user@example.com",
-  "groupName": "Premium Members"
+  "groupName": "Premium Members",
+  "metadata": {
+    "certificationInterests": "Cloud Computing (AWS, Azure, GCP), Cybersecurity",
+    "additionalInterests": "Advanced networking and security certifications",
+    "timestamp": "2025-07-23T10:30:00.000Z"
+  }
 }
 ```
 
 ### Parameters
 
-| Field       | Type   | Required | Description                                  |
-| ----------- | ------ | -------- | -------------------------------------------- |
-| `email`     | string | Yes      | Valid email address of the subscriber        |
-| `groupName` | string | Yes      | Name of the group to join (1-100 characters) |
+| Field                             | Type   | Required | Description                                      |
+| --------------------------------- | ------ | -------- | ------------------------------------------------ |
+| `email`                           | string | Yes      | Valid email address of the subscriber            |
+| `groupName`                       | string | Yes      | Name of the group to join (1-100 characters)     |
+| `metadata`                        | object | No       | Additional metadata to store with the subscriber |
+| `metadata.certificationInterests` | string | No       | Certification areas of interest                  |
+| `metadata.additionalInterests`    | string | No       | Additional interests or notes                    |
+| `metadata.timestamp`              | string | No       | ISO timestamp of the request                     |
+
+> **Note**: When `metadata.certificationInterests` or `metadata.additionalInterests` is provided, the API will update the subscriber's "interests" field in MailerLite with the JSON stringified metadata.
 
 ## Response
 
@@ -116,10 +127,11 @@ When the user is already in the group:
 ### Workflow
 
 1. **Authentication**: Validates JWT token from Authorization header
-2. **Input Validation**: Validates email format and group name
+2. **Input Validation**: Validates email format, group name, and optional metadata
 3. **Subscriber Lookup**: Finds subscriber in MailerLite by email
 4. **Group Lookup**: Finds group in MailerLite by name (case-insensitive)
 5. **Group Assignment**: Calls MailerLite API to add subscriber to group
+6. **Metadata Update**: If metadata contains `certificationInterests` or `additionalInterests`, updates the subscriber's "interests" field with JSON stringified metadata
 
 ### MailerLite API Call
 
@@ -146,7 +158,12 @@ curl -X POST https://api.certifai.io/join-group \
   -H "Content-Type: application/json" \
   -d '{
     "email": "john.doe@example.com",
-    "groupName": "Premium Members"
+    "groupName": "Premium Members",
+    "metadata": {
+      "certificationInterests": "Cloud Computing (AWS, Azure, GCP), Cybersecurity",
+      "additionalInterests": "Looking for advanced security certifications",
+      "timestamp": "2025-07-23T10:30:00.000Z"
+    }
   }'
 ```
 
@@ -162,6 +179,12 @@ const response = await fetch("https://api.certifai.io/join-group", {
   body: JSON.stringify({
     email: "john.doe@example.com",
     groupName: "Premium Members",
+    metadata: {
+      certificationInterests:
+        "Cloud Computing (AWS, Azure, GCP), Cybersecurity",
+      additionalInterests: "Looking for advanced security certifications",
+      timestamp: new Date().toISOString(),
+    },
   }),
 });
 

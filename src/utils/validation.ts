@@ -72,6 +72,13 @@ export const userJoinGroupSchema = Joi.object<UserJoinGroupRequest>({
     "string.max": "Group name must not exceed 100 characters",
     "any.required": "Group name is required",
   }),
+  metadata: Joi.object({
+    certificationInterests: Joi.string().optional(),
+    additionalInterests: Joi.string().optional(),
+    timestamp: Joi.string().optional(),
+  })
+    .unknown(true)
+    .optional(), // Allow additional metadata fields
 });
 
 export const validateUserJoinGroup = (

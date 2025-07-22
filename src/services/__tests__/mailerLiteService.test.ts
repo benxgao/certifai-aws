@@ -210,4 +210,86 @@ describe("MailerLiteService", () => {
       expect(result).toBe("subscriber-123");
     });
   });
+
+  describe("updateSubscriberFields", () => {
+    it("should update subscriber fields successfully", async () => {
+      const subscriberId = "subscriber-123";
+      const fields = {
+        interests:
+          '{"certificationInterests":"AWS, Azure","additionalInterests":"Security"}',
+        source: "adaptive-learning-interest",
+      };
+
+      mockedAxios.put.mockResolvedValueOnce({ data: {} });
+
+      await service.updateSubscriberFields(subscriberId, fields);
+
+      expect(mockedAxios.put).toHaveBeenCalledWith(
+        `https://connect.mailerlite.com/api/subscribers/${subscriberId}`,
+        { fields },
+        {
+          headers: {
+            Authorization: `Bearer ${mockApiKey}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          timeout: 10000,
+        }
+      );
+    });
+
+    it("should handle 404 error when subscriber not found", async () => {
+      const subscriberId = "non-existent-subscriber";
+      const fields = { interests: "test" };
+
+      mockedAxios.put.mockRejectedValueOnce({
+        isAxiosError: true,
+        response: {
+          status: 404,
+          data: { message: "Subscriber not found" },
+        },
+      });
+      mockedAxios.isAxiosError.mockReturnValueOnce(true);
+
+      await expect(
+        service.updateSubscriberFields(subscriberId, fields)
+      ).rejects.toThrow("Subscriber not found");
+    });
+
+    it("should handle 401 error for invalid API key", async () => {
+      const subscriberId = "subscriber-123";
+      const fields = { interests: "test" };
+
+      mockedAxios.put.mockRejectedValueOnce({
+        isAxiosError: true,
+        response: {
+          status: 401,
+          data: { message: "Unauthorized" },
+        },
+      });
+      mockedAxios.isAxiosError.mockReturnValueOnce(true);
+
+      await expect(
+        service.updateSubscriberFields(subscriberId, fields)
+      ).rejects.toThrow("Invalid MailerLite API key");
+    });
+
+    it("should handle rate limiting error", async () => {
+      const subscriberId = "subscriber-123";
+      const fields = { interests: "test" };
+
+      mockedAxios.put.mockRejectedValueOnce({
+        isAxiosError: true,
+        response: {
+          status: 429,
+          data: { message: "Rate limit exceeded" },
+        },
+      });
+      mockedAxios.isAxiosError.mockReturnValueOnce(true);
+
+      await expect(
+        service.updateSubscriberFields(subscriberId, fields)
+      ).rejects.toThrow("Rate limit exceeded. Please try again later");
+    });
+  });
 });

@@ -225,7 +225,7 @@ describe("UserSubscription Handler with JWT Protection", () => {
           email: "test@example.com",
           firstName: "John",
           lastName: "Doe",
-          ip_address: "127.0.0.1",
+          // ip_address: "127.0.0.1",
           status: "active",
           subscribed_at: expect.stringMatching(
             /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/
@@ -272,7 +272,7 @@ describe("UserSubscription Handler with JWT Protection", () => {
         email: "test@example.com",
         firstName: "John",
         lastName: "Doe",
-        ip_address: "192.168.1.1",
+        // ip_address: "192.168.1.1",
       });
 
       const mockCreateSubscriber = jest
@@ -296,7 +296,7 @@ describe("UserSubscription Handler with JWT Protection", () => {
           email: "test@example.com",
           firstName: "John",
           lastName: "Doe",
-          ip_address: "192.168.1.1",
+          // ip_address: "192.168.1.1",
           status: "active",
           subscribed_at: expect.stringMatching(
             /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/
@@ -327,7 +327,7 @@ describe("UserSubscription Handler with JWT Protection", () => {
           email: "test@example.com",
           firstName: "John",
           lastName: "Doe",
-          ip_address: "127.0.0.1",
+          // ip_address: "127.0.0.1",
           status: "active",
           subscribed_at: expect.stringMatching(
             /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/
