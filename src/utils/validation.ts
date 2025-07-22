@@ -1,5 +1,8 @@
 import Joi from "joi";
-import { UserSubscriptionRequest } from "../types/index.js";
+import {
+  UserSubscriptionRequest,
+  UserJoinGroupRequest,
+} from "../types/index.js";
 
 export const userSubscriptionSchema = Joi.object<UserSubscriptionRequest>({
   email: Joi.string().email().required().messages({
@@ -45,6 +48,40 @@ export const validateUserSubscription = (
   value?: UserSubscriptionRequest;
 } => {
   const { error, value } = userSubscriptionSchema.validate(data, {
+    abortEarly: false,
+    stripUnknown: true,
+  });
+
+  if (error) {
+    const errorMessage = error.details
+      .map((detail) => detail.message)
+      .join(", ");
+    return { isValid: false, error: errorMessage };
+  }
+
+  return { isValid: true, value };
+};
+
+export const userJoinGroupSchema = Joi.object<UserJoinGroupRequest>({
+  email: Joi.string().email().required().messages({
+    "string.email": "Please provide a valid email address",
+    "any.required": "Email is required",
+  }),
+  groupName: Joi.string().min(1).max(100).required().messages({
+    "string.min": "Group name must be at least 1 character long",
+    "string.max": "Group name must not exceed 100 characters",
+    "any.required": "Group name is required",
+  }),
+});
+
+export const validateUserJoinGroup = (
+  data: unknown
+): {
+  isValid: boolean;
+  error?: string;
+  value?: UserJoinGroupRequest;
+} => {
+  const { error, value } = userJoinGroupSchema.validate(data, {
     abortEarly: false,
     stripUnknown: true,
   });

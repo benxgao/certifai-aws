@@ -28,6 +28,18 @@ interface MailerLiteGroupsResponse {
   data: MailerLiteGroup[];
 }
 
+interface MailerLiteSubscriberData {
+  id: string;
+  email: string;
+  status: string;
+  subscribed_at?: string;
+  fields?: Record<string, string | number>;
+}
+
+interface MailerLiteSubscribersResponse {
+  data: MailerLiteSubscriberData[];
+}
+
 export class MailerLiteService {
   private readonly apiKey: string;
   private readonly baseUrl = "https://connect.mailerlite.com/api";
@@ -300,6 +312,157 @@ export class MailerLiteService {
       return groupIds;
     } catch (error) {
       logger.error("Error converting group names to IDs", error);
+      throw error;
+    }
+  }
+
+  async getSubscriberByEmail(
+    email: string
+  ): Promise<MailerLiteSubscriberData | null> {
+    try {
+      logger.info("Fetching MailerLite subscriber by email", { email });
+
+      const response: AxiosResponse<MailerLiteSubscribersResponse> =
+        await axios.get(`${this.baseUrl}/subscribers`, {
+          headers: {
+            Authorization: `Bearer ${this.apiKey}`,
+            Accept: "application/json",
+          },
+          params: {
+            filter: {
+              email: email,
+            },
+          },
+          timeout: 10000,
+        });
+
+      const subscribers = response.data.data;
+      if (subscribers.length === 0) {
+        logger.info("No subscriber found with email", { email });
+        return null;
+      }
+
+      logger.info("Successfully found subscriber by email", {
+        email,
+        subscriberId: subscribers[0].id,
+      });
+
+      return subscribers[0];
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data?.message || error.message;
+        const statusCode = error.response?.status;
+
+        logger.error(
+          "MailerLite API error fetching subscriber by email",
+          error,
+          {
+            email,
+            statusCode,
+            errorMessage,
+          }
+        );
+
+        if (statusCode === 401) {
+          throw new Error("Invalid MailerLite API key");
+        } else if (statusCode === 429) {
+          throw new Error("Rate limit exceeded. Please try again later");
+        }
+
+        throw new Error(`MailerLite API error: ${errorMessage}`);
+      }
+
+      logger.error("Unexpected error fetching subscriber by email", error, {
+        email,
+      });
+      throw new Error("Failed to fetch subscriber due to unexpected error");
+    }
+  }
+
+  async addSubscriberToGroup(
+    subscriberId: string,
+    groupId: string
+  ): Promise<void> {
+    try {
+      logger.info("Adding subscriber to group", { subscriberId, groupId });
+
+      await axios.post(
+        `${this.baseUrl}/subscribers/${subscriberId}/groups/${groupId}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${this.apiKey}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          timeout: 10000,
+        }
+      );
+
+      logger.info("Successfully added subscriber to group", {
+        subscriberId,
+        groupId,
+      });
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data?.message || error.message;
+        const statusCode = error.response?.status;
+
+        logger.error("MailerLite API error adding subscriber to group", error, {
+          subscriberId,
+          groupId,
+          statusCode,
+          errorMessage,
+        });
+
+        if (statusCode === 404) {
+          throw new Error("Subscriber or group not found");
+        } else if (statusCode === 401) {
+          throw new Error("Invalid MailerLite API key");
+        } else if (statusCode === 429) {
+          throw new Error("Rate limit exceeded. Please try again later");
+        } else if (statusCode === 422) {
+          throw new Error(
+            "Subscriber is already in the group or invalid data provided"
+          );
+        }
+
+        throw new Error(`MailerLite API error: ${errorMessage}`);
+      }
+
+      logger.error("Unexpected error adding subscriber to group", error, {
+        subscriberId,
+        groupId,
+      });
+
+      throw new Error(
+        "Failed to add subscriber to group due to unexpected error"
+      );
+    }
+  }
+
+  async getGroupByName(groupName: string): Promise<MailerLiteGroup | null> {
+    try {
+      logger.info("Fetching group by name", { groupName });
+
+      const groups = await this.getGroups();
+      const group = groups.find(
+        (g) => g.name.toLowerCase() === groupName.toLowerCase()
+      );
+
+      if (!group) {
+        logger.info("No group found with name", { groupName });
+        return null;
+      }
+
+      logger.info("Successfully found group by name", {
+        groupName,
+        groupId: group.id,
+      });
+
+      return group;
+    } catch (error) {
+      logger.error("Error fetching group by name", error, { groupName });
       throw error;
     }
   }

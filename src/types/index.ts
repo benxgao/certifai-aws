@@ -39,3 +39,15 @@ export interface UserUnsubscribeResponse {
   message: string;
   subscriberId?: string;
 }
+
+export interface UserJoinGroupRequest {
+  email: string;
+  groupName: string;
+}
+
+export interface UserJoinGroupResponse {
+  success: boolean;
+  message: string;
+  subscriberId?: string;
+  groupId?: string;
+}

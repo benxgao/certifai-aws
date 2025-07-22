@@ -101,6 +101,20 @@ Resources:
             Method: put
             RestApiId: !Ref ApiGateway
 
+  # User Join Group Function
+  UserJoinGroupFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: handlers/userJoinGrop.handler
+      Events:
+        UserJoinGroup:
+          Type: Api
+          Properties:
+            Path: /join-group
+            Method: post
+            RestApiId: !Ref ApiGateway
+
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM
@@ -120,3 +134,7 @@ Outputs:
   UserUnsubscribeFunction:
     Description: "User Unsubscribe Lambda Function ARN"
     Value: !GetAtt UserUnsubscribeFunction.Arn
+
+  UserJoinGroupFunction:
+    Description: "User Join Group Lambda Function ARN"
+    Value: !GetAtt UserJoinGroupFunction.Arn
