@@ -30,7 +30,7 @@ describe("UserJoinGroup Handler with JWT Protection", () => {
         Authorization: "Bearer valid-jwt-token",
       },
       body: JSON.stringify({
-        email: "test@example.com",
+        subscriber_id: "test-subscriber-123",
         groupName: "Test Group",
       }),
       requestContext: {
@@ -50,7 +50,6 @@ describe("UserJoinGroup Handler with JWT Protection", () => {
 
     // Setup MailerLiteService mock
     mockMailerLiteService = {
-      getSubscriberByEmail: jest.fn(),
       getGroupByName: jest.fn(),
       addSubscriberToGroup: jest.fn(),
       updateSubscriberFields: jest.fn(),
@@ -134,7 +133,7 @@ describe("UserJoinGroup Handler with JWT Protection", () => {
       });
     });
 
-    it("should return 400 when email is missing", async () => {
+    it("should return 400 when subscriber_id is missing", async () => {
       mockEvent.body = JSON.stringify({
         groupName: "Test Group",
       });
@@ -144,14 +143,14 @@ describe("UserJoinGroup Handler with JWT Protection", () => {
       expect(result.statusCode).toBe(400);
       expect(JSON.parse(result.body)).toEqual({
         error: "Bad Request",
-        message: "Email is required",
+        message: "Subscriber ID is required",
         timestamp: expect.any(String),
       });
     });
 
-    it("should return 400 when email is invalid", async () => {
+    it("should return 400 when subscriber_id is empty", async () => {
       mockEvent.body = JSON.stringify({
-        email: "invalid-email",
+        subscriber_id: "",
         groupName: "Test Group",
       });
 
@@ -160,14 +159,14 @@ describe("UserJoinGroup Handler with JWT Protection", () => {
       expect(result.statusCode).toBe(400);
       expect(JSON.parse(result.body)).toEqual({
         error: "Bad Request",
-        message: "Please provide a valid email address",
+        message: '"subscriber_id" is not allowed to be empty',
         timestamp: expect.any(String),
       });
     });
 
     it("should return 400 when groupName is missing", async () => {
       mockEvent.body = JSON.stringify({
-        email: "test@example.com",
+        subscriber_id: "test-subscriber-123",
       });
 
       const result = await handler(mockEvent, mockContext);
@@ -189,21 +188,12 @@ describe("UserJoinGroup Handler with JWT Protection", () => {
       (jwtAuth.verifyJwtToken as jest.Mock).mockResolvedValue(true);
     });
 
-    it("should successfully add user to group", async () => {
-      const mockSubscriber = {
-        id: "subscriber-123",
-        email: "test@example.com",
-        status: "active",
-      };
-
+    it("should successfully add subscriber to group", async () => {
       const mockGroup = {
         id: "group-456",
         name: "Test Group",
       };
 
-      mockMailerLiteService.getSubscriberByEmail.mockResolvedValue(
-        mockSubscriber
-      );
       mockMailerLiteService.getGroupByName.mockResolvedValue(mockGroup);
       mockMailerLiteService.addSubscriberToGroup.mockResolvedValue(undefined);
 
@@ -213,38 +203,26 @@ describe("UserJoinGroup Handler with JWT Protection", () => {
       expect(JSON.parse(result.body)).toEqual({
         success: true,
         message:
-          "Successfully added user test@example.com to group 'Test Group'",
-        subscriberId: "subscriber-123",
+          "Successfully added subscriber test-subscriber-123 to group 'Test Group'",
+        subscriberId: "test-subscriber-123",
         groupId: "group-456",
       });
 
-      expect(mockMailerLiteService.getSubscriberByEmail).toHaveBeenCalledWith(
-        "test@example.com"
-      );
       expect(mockMailerLiteService.getGroupByName).toHaveBeenCalledWith(
         "Test Group"
       );
       expect(mockMailerLiteService.addSubscriberToGroup).toHaveBeenCalledWith(
-        "subscriber-123",
+        "test-subscriber-123",
         "group-456"
       );
     });
 
     it("should handle subscriber already in group gracefully", async () => {
-      const mockSubscriber = {
-        id: "subscriber-123",
-        email: "test@example.com",
-        status: "active",
-      };
-
       const mockGroup = {
         id: "group-456",
         name: "Test Group",
       };
 
-      mockMailerLiteService.getSubscriberByEmail.mockResolvedValue(
-        mockSubscriber
-      );
       mockMailerLiteService.getGroupByName.mockResolvedValue(mockGroup);
       mockMailerLiteService.addSubscriberToGroup.mockRejectedValue(
         new Error("Subscriber is already in the group or invalid data provided")
@@ -255,7 +233,8 @@ describe("UserJoinGroup Handler with JWT Protection", () => {
       expect(result.statusCode).toBe(200);
       expect(JSON.parse(result.body)).toEqual({
         success: true,
-        message: "User test@example.com is already in group 'Test Group'",
+        message:
+          "Subscriber test-subscriber-123 is already in group 'Test Group'",
       });
     });
   });
@@ -268,29 +247,7 @@ describe("UserJoinGroup Handler with JWT Protection", () => {
       (jwtAuth.verifyJwtToken as jest.Mock).mockResolvedValue(true);
     });
 
-    it("should return 404 when subscriber not found", async () => {
-      mockMailerLiteService.getSubscriberByEmail.mockResolvedValue(null);
-
-      const result = await handler(mockEvent, mockContext);
-
-      expect(result.statusCode).toBe(404);
-      expect(JSON.parse(result.body)).toEqual({
-        error: "Not Found",
-        message: "Subscriber with email test@example.com not found",
-        timestamp: expect.any(String),
-      });
-    });
-
     it("should return 404 when group not found", async () => {
-      const mockSubscriber = {
-        id: "subscriber-123",
-        email: "test@example.com",
-        status: "active",
-      };
-
-      mockMailerLiteService.getSubscriberByEmail.mockResolvedValue(
-        mockSubscriber
-      );
       mockMailerLiteService.getGroupByName.mockResolvedValue(null);
 
       const result = await handler(mockEvent, mockContext);
@@ -317,20 +274,11 @@ describe("UserJoinGroup Handler with JWT Protection", () => {
     });
 
     it("should handle rate limiting error", async () => {
-      const mockSubscriber = {
-        id: "subscriber-123",
-        email: "test@example.com",
-        status: "active",
-      };
-
       const mockGroup = {
         id: "group-456",
         name: "Test Group",
       };
 
-      mockMailerLiteService.getSubscriberByEmail.mockResolvedValue(
-        mockSubscriber
-      );
       mockMailerLiteService.getGroupByName.mockResolvedValue(mockGroup);
       mockMailerLiteService.addSubscriberToGroup.mockRejectedValue(
         new Error("Rate limit exceeded. Please try again later")
@@ -348,7 +296,7 @@ describe("UserJoinGroup Handler with JWT Protection", () => {
 
     it("should successfully process join group request with metadata and update interests field", async () => {
       const mockBody = {
-        email: "test@example.com",
+        subscriber_id: "test-subscriber-123",
         groupName: "Test Group",
         metadata: {
           certificationInterests: "AWS, Azure, GCP",
@@ -359,20 +307,11 @@ describe("UserJoinGroup Handler with JWT Protection", () => {
 
       mockEvent.body = JSON.stringify(mockBody);
 
-      const mockSubscriber = {
-        id: "subscriber-123",
-        email: "test@example.com",
-        status: "active",
-      };
-
       const mockGroup = {
         id: "group-456",
         name: "Test Group",
       };
 
-      mockMailerLiteService.getSubscriberByEmail.mockResolvedValue(
-        mockSubscriber
-      );
       mockMailerLiteService.getGroupByName.mockResolvedValue(mockGroup);
       mockMailerLiteService.addSubscriberToGroup.mockResolvedValue();
       mockMailerLiteService.updateSubscriberFields.mockResolvedValue();
@@ -383,14 +322,14 @@ describe("UserJoinGroup Handler with JWT Protection", () => {
       expect(JSON.parse(result.body)).toEqual({
         success: true,
         message:
-          "Successfully added user test@example.com to group 'Test Group'",
-        subscriberId: "subscriber-123",
+          "Successfully added subscriber test-subscriber-123 to group 'Test Group'",
+        subscriberId: "test-subscriber-123",
         groupId: "group-456",
       });
 
       // Verify that updateSubscriberFields was called with the metadata
       expect(mockMailerLiteService.updateSubscriberFields).toHaveBeenCalledWith(
-        "subscriber-123",
+        "test-subscriber-123",
         {
           interests: JSON.stringify(mockBody.metadata),
         }
@@ -399,7 +338,7 @@ describe("UserJoinGroup Handler with JWT Protection", () => {
 
     it("should not update interests field when metadata has no certification or additional interests", async () => {
       const mockBody = {
-        email: "test@example.com",
+        subscriber_id: "test-subscriber-123",
         groupName: "Test Group",
         metadata: {
           timestamp: "2025-07-23T10:30:00.000Z",
@@ -409,20 +348,11 @@ describe("UserJoinGroup Handler with JWT Protection", () => {
 
       mockEvent.body = JSON.stringify(mockBody);
 
-      const mockSubscriber = {
-        id: "subscriber-123",
-        email: "test@example.com",
-        status: "active",
-      };
-
       const mockGroup = {
         id: "group-456",
         name: "Test Group",
       };
 
-      mockMailerLiteService.getSubscriberByEmail.mockResolvedValue(
-        mockSubscriber
-      );
       mockMailerLiteService.getGroupByName.mockResolvedValue(mockGroup);
       mockMailerLiteService.addSubscriberToGroup.mockResolvedValue();
 
@@ -432,8 +362,8 @@ describe("UserJoinGroup Handler with JWT Protection", () => {
       expect(JSON.parse(result.body)).toEqual({
         success: true,
         message:
-          "Successfully added user test@example.com to group 'Test Group'",
-        subscriberId: "subscriber-123",
+          "Successfully added subscriber test-subscriber-123 to group 'Test Group'",
+        subscriberId: "test-subscriber-123",
         groupId: "group-456",
       });
 
@@ -445,7 +375,7 @@ describe("UserJoinGroup Handler with JWT Protection", () => {
 
     it("should still succeed even if updating interests field fails", async () => {
       const mockBody = {
-        email: "test@example.com",
+        subscriber_id: "test-subscriber-123",
         groupName: "Test Group",
         metadata: {
           certificationInterests: "AWS, Azure, GCP",
@@ -455,20 +385,11 @@ describe("UserJoinGroup Handler with JWT Protection", () => {
 
       mockEvent.body = JSON.stringify(mockBody);
 
-      const mockSubscriber = {
-        id: "subscriber-123",
-        email: "test@example.com",
-        status: "active",
-      };
-
       const mockGroup = {
         id: "group-456",
         name: "Test Group",
       };
 
-      mockMailerLiteService.getSubscriberByEmail.mockResolvedValue(
-        mockSubscriber
-      );
       mockMailerLiteService.getGroupByName.mockResolvedValue(mockGroup);
       mockMailerLiteService.addSubscriberToGroup.mockResolvedValue();
       // Mock updateSubscriberFields to fail
@@ -483,8 +404,8 @@ describe("UserJoinGroup Handler with JWT Protection", () => {
       expect(JSON.parse(result.body)).toEqual({
         success: true,
         message:
-          "Successfully added user test@example.com to group 'Test Group'",
-        subscriberId: "subscriber-123",
+          "Successfully added subscriber test-subscriber-123 to group 'Test Group'",
+        subscriberId: "test-subscriber-123",
         groupId: "group-456",
       });
     });

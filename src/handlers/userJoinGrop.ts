@@ -88,27 +88,12 @@ export const handler = async (
 
     try {
       logger.info("Processing user join group request", {
-        email: validatedData.email,
+        subscriberId: validatedData.subscriber_id,
         groupName: validatedData.groupName,
         requestId: context.awsRequestId,
       });
 
-      // Step 1: Get subscriber by email
-      const subscriber = await mailerLiteService.getSubscriberByEmail(
-        validatedData.email
-      );
-
-      if (!subscriber) {
-        logger.warn("Subscriber not found", {
-          email: validatedData.email,
-          requestId: context.awsRequestId,
-        });
-        return createNotFoundResponse(
-          `Subscriber with email ${validatedData.email} not found`
-        );
-      }
-
-      // Step 2: Get group by name
+      // Step 1: Get group by name
       const group = await mailerLiteService.getGroupByName(
         validatedData.groupName
       );
@@ -123,10 +108,13 @@ export const handler = async (
         );
       }
 
-      // Step 3: Add subscriber to group
-      await mailerLiteService.addSubscriberToGroup(subscriber.id, group.id);
+      // Step 2: Add subscriber to group
+      await mailerLiteService.addSubscriberToGroup(
+        validatedData.subscriber_id,
+        group.id
+      );
 
-      // Step 4: Update interests field if metadata is provided
+      // Step 3: Update interests field if metadata is provided
       if (
         validatedData.metadata &&
         (validatedData.metadata.certificationInterests ||
@@ -134,18 +122,21 @@ export const handler = async (
       ) {
         try {
           logger.info("Updating subscriber interests field", {
-            subscriberId: subscriber.id,
+            subscriberId: validatedData.subscriber_id,
             hasMetadata: !!validatedData.metadata,
             requestId: context.awsRequestId,
           });
 
           const interestsData = JSON.stringify(validatedData.metadata);
-          await mailerLiteService.updateSubscriberFields(subscriber.id, {
-            interests: interestsData,
-          });
+          await mailerLiteService.updateSubscriberFields(
+            validatedData.subscriber_id,
+            {
+              interests: interestsData,
+            }
+          );
 
           logger.info("Successfully updated subscriber interests", {
-            subscriberId: subscriber.id,
+            subscriberId: validatedData.subscriber_id,
             requestId: context.awsRequestId,
           });
         } catch (interestsError) {
@@ -154,7 +145,7 @@ export const handler = async (
             "Failed to update subscriber interests field",
             interestsError,
             {
-              subscriberId: subscriber.id,
+              subscriberId: validatedData.subscriber_id,
               requestId: context.awsRequestId,
             }
           );
@@ -163,15 +154,14 @@ export const handler = async (
 
       const response: UserJoinGroupResponse = {
         success: true,
-        message: `Successfully added user ${validatedData.email} to group '${validatedData.groupName}'`,
-        subscriberId: subscriber.id,
+        message: `Successfully added subscriber ${validatedData.subscriber_id} to group '${validatedData.groupName}'`,
+        subscriberId: validatedData.subscriber_id,
         groupId: group.id,
       };
 
       logger.info("Successfully processed user join group request", {
-        email: validatedData.email,
+        subscriberId: validatedData.subscriber_id,
         groupName: validatedData.groupName,
-        subscriberId: subscriber.id,
         groupId: group.id,
         requestId: context.awsRequestId,
       });
@@ -187,7 +177,7 @@ export const handler = async (
         "MailerLite service error during join group operation",
         mailerLiteError,
         {
-          email: validatedData.email,
+          subscriberId: validatedData.subscriber_id,
           groupName: validatedData.groupName,
           requestId: context.awsRequestId,
         }
@@ -199,7 +189,7 @@ export const handler = async (
       } else if (errorMessage.includes("already in the group")) {
         const response: UserJoinGroupResponse = {
           success: true,
-          message: `User ${validatedData.email} is already in group '${validatedData.groupName}'`,
+          message: `Subscriber ${validatedData.subscriber_id} is already in group '${validatedData.groupName}'`,
         };
         return createSuccessResponse(response);
       } else if (errorMessage.includes("Rate limit exceeded")) {

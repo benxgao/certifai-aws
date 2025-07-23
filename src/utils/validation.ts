@@ -63,9 +63,9 @@ export const validateUserSubscription = (
 };
 
 export const userJoinGroupSchema = Joi.object<UserJoinGroupRequest>({
-  email: Joi.string().email().required().messages({
-    "string.email": "Please provide a valid email address",
-    "any.required": "Email is required",
+  subscriber_id: Joi.string().min(1).required().messages({
+    "string.min": "Subscriber ID must be at least 1 character long",
+    "any.required": "Subscriber ID is required",
   }),
   groupName: Joi.string().min(1).max(100).required().messages({
     "string.min": "Group name must be at least 1 character long",

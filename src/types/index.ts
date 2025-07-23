@@ -41,7 +41,7 @@ export interface UserUnsubscribeResponse {
 }
 
 export interface UserJoinGroupRequest {
-  email: string;
+  subscriber_id: string;
   groupName: string;
   metadata?: {
     certificationInterests?: string;
